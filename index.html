@@ -12,7 +12,7 @@
     Hello World
 </body>
 <script>
-    var server = io.connect('http://localhost:5000');
+    var server = io.connect();
 
     server.on('connect', function(data) {
         server.emit('messages', 'Client connected');
