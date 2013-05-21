@@ -20,6 +20,12 @@ server.listen(port, function() {
   console.log("Listening on " + port);
 });
 
+// https://devcenter.heroku.com/articles/using-socket-io-with-node-js-on-heroku
+io.configure(function () {
+  io.set("transports", ["xhr-polling"]);
+  io.set("polling duration", 10);
+});
+
 io.sockets.on('connection', function(client) {
   console.log('Client connected...');
 
