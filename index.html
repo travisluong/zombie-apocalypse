@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Node.js MUD">
+    <meta name="keywords" content="Node.js MUD">
+    <title>Node.js MUD</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    Hello World
+</body>
+<script>
+    var server = io.connect('http://localhost:5000');
+
+    server.on('connect', function(data) {
+        server.emit('messages', 'Client connected');
+        var nickname = prompt("What is your nickname?");
+    });
+</script>
+</html>
