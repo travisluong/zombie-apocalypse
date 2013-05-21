@@ -2,6 +2,14 @@ var express = require("express");
 var app = express();
 app.use(express.logger());
 
+var redis = require('redis-url').connect(process.env.REDISTOGO_URL);
+
+redis.set('foo', 'bar');
+
+redis.get('foo', function(err, value) {
+  console.log('foo is: ' + value);
+});
+
 app.get('/', function(request, response) {
   response.send('Hello World!');
 });
