@@ -3,7 +3,12 @@ var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
 var redis = require('redis-url').connect(process.env.REDISTOGO_URL);
+
+// enable logging
 app.use(express.logger());
+
+// declare static directory
+app.use(express.static(__dirname + '/public'));
 
 redis.set('foo', 'bar');
 
@@ -31,5 +36,7 @@ io.sockets.on('connection', function(client) {
 
   client.on('messages', function(data) {
     console.log(data);
+    client.broadcast.emit("messages", data);
+    client.emit("messages", data);
   });
 });
