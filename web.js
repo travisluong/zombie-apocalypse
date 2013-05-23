@@ -72,8 +72,18 @@ io.sockets.on('connection', function (client) {
         client.get('nickname', function (err, name) {
           split_words = data.split(' ');
           if (split_words[0] === 'kill') {
-            client.broadcast.emit("messages", name + " attacked " + split_words[1]);
-            client.emit("messages", name + " attacked " + split_words[1]);
+            var attacked = split_words[1];
+            console.log("attacked" + attacked);
+            client.broadcast.emit("messages", name + " attacked " + attacked);
+            client.emit("messages", name + " attacked " + attacked);
+            redis.hget("players", attacked, function (err, reply) {
+              var attacked_player = JSON.parse(reply);
+              attacked_player.hp = attacked_player.hp - 10;
+              attacked_player_name = attacked_player.nickname;
+              attacked_player = JSON.stringify(attacked_player);
+              console.log(attacked_player);
+              redis.hset("players", attacked_player_name, attacked_player);
+            });
           } else {
             var message = name + ": " + data;
             client.broadcast.emit("messages", message);
