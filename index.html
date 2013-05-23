@@ -30,7 +30,9 @@ var insertMessage = function (data) {
 }
 
 server.on('connect', function(data) {
-    server.emit('messages', 'Client connected...');
+    insertMessage("Connected to server...");
+    var nickname = prompt("What is your nickname?");
+    server.emit('join', nickname);
 });
 
 server.on('messages', function(data) {

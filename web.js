@@ -34,9 +34,20 @@ io.configure(function () {
 io.sockets.on('connection', function(client) {
   console.log('Client connected...');
 
+  client.on('join', function(name) {
+    client.set('nickname', name);
+    var message = name + " has joined the room.";
+    client.emit('messages', message);
+    client.broadcast.emit('messages', message)
+  });
+
   client.on('messages', function(data) {
     console.log(data);
-    client.broadcast.emit("messages", data);
-    client.emit("messages", data);
+
+    client.get('nickname', function(err, name) {
+      var message = name + ": " + data;
+      client.broadcast.emit("messages", message);
+      client.emit("messages", message);
+    })
   });
 });
