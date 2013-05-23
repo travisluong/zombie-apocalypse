@@ -3,6 +3,10 @@ body {
   font-family: monospace;
 }
 
+.hp {
+  color: green;
+}
+
 #container {
   width: 700px;
   margin: auto;
