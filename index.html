@@ -20,7 +20,7 @@
     </div>
 </body>
 <script>
-var server = io.connect();
+var server = io.connect('/', {'sync disconnect on unload' : true});
 
 var insertMessage = function (data) {
     $('#chat_window').append('<div>' + data + '</div>');
@@ -31,8 +31,6 @@ var insertMessage = function (data) {
 
 server.on('connect', function(data) {
     insertMessage("Connected to server...");
-    var nickname = prompt("What is your nickname?");
-    server.emit('join', nickname);
 });
 
 server.on('messages', function(data) {

@@ -34,20 +34,39 @@ io.configure(function () {
 io.sockets.on('connection', function(client) {
   console.log('Client connected...');
 
-  client.on('join', function(name) {
-    client.set('nickname', name);
-    var message = name + " has joined the room.";
-    client.emit('messages', message);
-    client.broadcast.emit('messages', message)
+  client.set('state', 1);
+
+  client.emit('messages', 'Please enter your name.')
+
+  client.on('disconnect', function() {
+    console.log('USER DISCONNECTED');
+    client.get('nickname', function(err, name) {
+      var message = name + " has left the room.";
+      client.broadcast.emit("messages", message);
+    });
   });
 
   client.on('messages', function(data) {
     console.log(data);
 
-    client.get('nickname', function(err, name) {
-      var message = name + ": " + data;
-      client.broadcast.emit("messages", message);
-      client.emit("messages", message);
-    })
+    client.get('state', function(err, state) {
+      console.log(state);
+      switch(state) {
+        case 1:
+          client.set('nickname', data);
+          client.set('state', 2);
+          var message = data + " has joined the room.";
+          client.broadcast.emit("messages", message);
+          client.emit("messages", message);
+          break;
+        case 2:
+          client.get('nickname', function(err, name) {
+            var message = name + ": " + data;
+            client.broadcast.emit("messages", message);
+            client.emit("messages", message);
+          });
+          break;
+      }
+    });
   });
 });
