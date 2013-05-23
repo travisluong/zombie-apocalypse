@@ -31,30 +31,30 @@ io.configure(function () {
   io.set("polling duration", 10);
 });
 
-io.sockets.on('connection', function (client) {
+io.sockets.on('connection', function (socket) {
   console.log('Client connected...');
 
-  client.set('state', 1);
+  socket.set('state', 1);
 
-  client.emit('messages', 'Please enter your name.')
+  socket.emit('messages', 'Please enter your name.')
 
-  client.on('disconnect', function () {
+  socket.on('disconnect', function () {
     console.log('USER DISCONNECTED');
-    client.get('nickname', function(err, name) {
+    socket.get('nickname', function(err, name) {
       var message = name + " has left the room.";
-      client.broadcast.emit("messages", message);
+      socket.broadcast.emit("messages", message);
     });
   });
 
-  client.on('messages', function (data) {
+  socket.on('messages', function (data) {
     console.log(data);
 
-    client.get('state', function (err, state) {
+    socket.get('state', function (err, state) {
       console.log(state);
       switch (state) {
         case 1:
-        client.set('nickname', data);
-        client.set('state', 2);
+        socket.set('nickname', data);
+        socket.set('state', 2);
 
         var player = JSON.stringify({nickname: data, hp: 100});
 
@@ -65,17 +65,17 @@ io.sockets.on('connection', function (client) {
         });
 
         var message = data + " has joined the room.";
-        client.broadcast.emit("messages", message);
-        client.emit("messages", message);
+        socket.broadcast.emit("messages", message);
+        socket.emit("messages", message);
         break;
         case 2:
-        client.get('nickname', function (err, name) {
+        socket.get('nickname', function (err, name) {
           split_words = data.split(' ');
           if (split_words[0] === 'kill') {
             var attacked = split_words[1];
             console.log("attacked" + attacked);
-            client.broadcast.emit("messages", name + " attacked " + attacked);
-            client.emit("messages", name + " attacked " + attacked);
+            socket.broadcast.emit("messages", name + " attacked " + attacked);
+            socket.emit("messages", name + " attacked " + attacked);
             redis.hget("players", attacked, function (err, reply) {
               var attacked_player = JSON.parse(reply);
               attacked_player.hp = attacked_player.hp - 10;
@@ -86,12 +86,12 @@ io.sockets.on('connection', function (client) {
             });
           } else {
             var message = name + ": " + data;
-            client.broadcast.emit("messages", message);
-            client.emit("messages", message);
+            socket.broadcast.emit("messages", message);
+            socket.emit("messages", message);
           }
           redis.hget("players", name, function (err, reply) {
             var player = JSON.parse(reply);
-            client.emit('messages', '<span class="hp">' + player.hp.toString() + "hp</span>");
+            socket.emit('messages', '<span class="hp">' + player.hp.toString() + "hp</span>");
           });
         });
         break;

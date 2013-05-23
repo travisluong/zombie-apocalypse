@@ -1,47 +1,47 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="description" content="Node.js MUD">
-    <meta name="keywords" content="Node.js MUD">
-    <title>Node.js MUD</title>
-    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
-    <link rel="stylesheet" href="style.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
+  <meta charset="utf-8">
+  <meta name="description" content="Node.js MUD">
+  <meta name="keywords" content="Node.js MUD">
+  <title>Node.js MUD</title>
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <div id="container">
-        <div id="chat_window">
-        </div>
-        <form action="" id="chat_form">
-            <input type="text" name="chat_input" id="chat_input" autocomplete="off"></input>
-        </form>
+  <div id="container">
+    <div id="chat_window">
     </div>
+    <form action="" id="chat_form">
+      <input type="text" name="chat_input" id="chat_input" autocomplete="off"></input>
+    </form>
+  </div>
 </body>
 <script>
-var server = io.connect('/', {'sync disconnect on unload' : true});
+var socket = io.connect('/', {'sync disconnect on unload' : true});
 
 var insertMessage = function (data) {
-    $('#chat_window').append('<div>' + data + '</div>');
-    $('#chat_window').animate({
-        scrollTop: $('#chat_window').height()
-    }, 300);
+  $('#chat_window').append('<div>' + data + '</div>');
+  $('#chat_window').animate({
+    scrollTop: $('#chat_window').height()
+  }, 300);
 }
 
-server.on('connect', function(data) {
-    insertMessage("Connected to server...");
+socket.on('connect', function(data) {
+  insertMessage("Server connected...");
 });
 
-server.on('messages', function(data) {
-    insertMessage(data);
+socket.on('messages', function(data) {
+  insertMessage(data);
 })
 
 $('#chat_form').submit(function(e) {
-    e.preventDefault();
-    var message = $('#chat_input').val();
-    server.emit('messages', message);
-    $('#chat_input').val("");
+  e.preventDefault();
+  var message = $('#chat_input').val();
+  socket.emit('messages', message);
+  $('#chat_input').val("");
 });
 </script>
 </html>
