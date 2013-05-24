@@ -148,3 +148,22 @@ setInterval(function () {
     });
   });
 }, 2000);
+
+// set interval to replenish mana
+setInterval(function () {
+  redis.hkeys('chatters', function (err, chatters) {
+    chatters.forEach(function (chatter_key) {
+      redis.hget('chatters', chatter_key, function (err, chatter_json) {
+        var chatter_data = JSON.parse(chatter_json);
+        if (chatter_data.mp <= 100) {
+          chatter_data.mp = chatter_data.mp + 4;
+          if (chatter_data.mp > 100) {
+            chatter_data.mp = 100;
+          }
+          new_chatter_data = JSON.stringify(chatter_data);
+          redis.hset('chatters', chatter_data.nickname, new_chatter_data);
+        }
+      });
+    });
+  });
+}, 4000);
