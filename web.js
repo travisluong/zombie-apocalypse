@@ -81,27 +81,36 @@ io.sockets.on('connection', function (socket) {
 
   // on messages
   socket.on('messages', function (data) {
-    socket.get('nickname', function (err, name) {
+    socket.get('nickname', function (err, nickname) {
+
       split_words = data.split(' ');
+
       if (split_words[0] === 'kill') {
         var attacked = split_words[1];
-        console.log("attacked" + attacked);
-        socket.broadcast.emit("messages", name + " attacked " + attacked);
-        socket.emit("messages", name + " attacked " + attacked);
-        redis.hget("chatters", attacked, function (err, reply) {
-          var attacked_chatter = JSON.parse(reply);
-          attacked_chatter.hp = attacked_chatter.hp - 10;
-          attacked_chatter_name = attacked_chatter.nickname;
-          attacked_chatter = JSON.stringify(attacked_chatter);
-          console.log(attacked_chatter);
-          redis.hset("chatters", attacked_chatter_name, attacked_chatter);
+
+        // check if chatter exists
+        redis.hexists('chatters', attacked, function (err, reply) {
+          if (reply === 1) {
+            socket.broadcast.emit("messages", nickname + " attacked " + attacked);
+            socket.emit("messages", nickname + " attacked " + attacked);
+            redis.hget("chatters", attacked, function (err, reply) {
+            var attacked_chatter = JSON.parse(reply);
+            attacked_chatter.hp = attacked_chatter.hp - 10;
+            attacked_chatter_nickname = attacked_chatter.nickname;
+            attacked_chatter = JSON.stringify(attacked_chatter);
+            console.log(attacked_chatter);
+            redis.hset("chatters", attacked_chatter_nickname, attacked_chatter);
+            });
+          } else {
+            socket.emit('messages', attacked + ' does not exist!');
+          }
         });
       } else {
-        var message = name + ": " + data;
+        var message = nickname + ": " + data;
         socket.broadcast.emit("messages", message);
         socket.emit("messages", message);
       }
-      redis.hget("chatters", name, function (err, reply) {
+      redis.hget("chatters", nickname, function (err, reply) {
         var chatter = JSON.parse(reply);
         socket.emit('messages', '<span class="hp">' + chatter.hp.toString() + "hp</span>");
       });
