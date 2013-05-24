@@ -37,16 +37,17 @@ var handleAttack = function (nickname, attacked, socket) {
           attacker = JSON.stringify(attacker);
           redis.hset("chatters", nickname, attacker);
 
-          // broadcast attack to all
-          io.sockets.emit("messages", nickname + " attacked " + attacked);
-
           // get attacked from redis, deal damage, and save back to redis
           redis.hget("chatters", attacked, function (err, reply) {
             var attacked_chatter = JSON.parse(reply);
-            attacked_chatter.hp = attacked_chatter.hp - 10;
+            var damage = Math.round(Math.random() * 30);
+            attacked_chatter.hp = attacked_chatter.hp - damage;
             attacked_chatter_nickname = attacked_chatter.nickname;
             attacked_chatter = JSON.stringify(attacked_chatter);
             redis.hset("chatters", attacked_chatter_nickname, attacked_chatter);
+            // broadcast attack to all
+            io.sockets.emit("messages", nickname +
+              " attacked " + attacked + " for " + damage + " damage!");
         });
         } else {
         socket.emit('messages', "You don't have enough mana!");
