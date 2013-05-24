@@ -36,7 +36,13 @@ var insertMessage = function (data) {
 }
 
 var insertChatter = function (data) {
-  $('#chatters').append('<div>' + data + '</div>');
+  $('#chatters').append('<div id="' + data.socket_id + '">' + data.nickname + '</div>');
+}
+
+var removeChatter = function (data) {
+  $('#chatters div').filter(function () {
+    return $(this).text() === data;
+  }).remove();
 }
 
 socket.on('connect', function(data) {
@@ -50,6 +56,8 @@ socket.on('messages', function(data) {
 })
 
 socket.on('add chatter', insertChatter);
+
+socket.on('remove chatter', removeChatter);
 
 $('#chat_form').submit(function(e) {
   e.preventDefault();

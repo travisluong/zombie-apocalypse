@@ -5,7 +5,7 @@ var io = require('socket.io').listen(server);
 var redis = require('redis-url').connect(process.env.REDISTOGO_URL);
 
 // enable logging
-app.use(express.logger());
+//app.use(express.logger());
 
 // declare static directory
 app.use(express.static(__dirname + '/public'));
@@ -36,6 +36,7 @@ io.sockets.on('connection', function (socket) {
       redis.hdel('chatters', nickname, function (err, reply) {
         var message = nickname + " has left the room.";
         socket.broadcast.emit("messages", message);
+        socket.broadcast.emit("remove chatter", nickname);
       });
     });
   });
@@ -43,26 +44,38 @@ io.sockets.on('connection', function (socket) {
   // on join
   socket.on('join', function (nickname) {
 
-    // emit current chatters to client
-    redis.hkeys('chatters', function (err, nicknames) {
-      nicknames.forEach(function (nickname) {
-        socket.emit('add chatter', nickname);
-      });
-      // set nickname for this client
-      socket.set('nickname', nickname);
+    // set nickname for this client
+    socket.set('nickname', nickname);
 
-      // save chatter to redis
-      var chatter = JSON.stringify({nickname: nickname, hp: 100});
-      redis.hset("chatters", nickname, chatter);
+    // initialize chatter data
+    var chatter_data = {
+      nickname: nickname,
+      hp: 100,
+      socket_id: socket.id
+    }
+
+    // save chatter to redis
+    var chatter_json = JSON.stringify(chatter_data);
+    redis.hset("chatters", nickname, chatter_json);
+
+    // emit current chatters to client
+    redis.hkeys('chatters', function (err, chatters) {
+
+      // loop through chatters hash map and display them on client
+      chatters.forEach(function (chatter_key) {
+        redis.hget('chatters', chatter_key, function (err, chatter_json) {
+          var chatter_data = JSON.parse(chatter_json);
+          socket.emit('add chatter', chatter_data);
+        });
+      });
 
       // broadcast chatter has joined room
       var message = nickname + " has joined the room.";
       socket.broadcast.emit("messages", message);
       socket.emit("messages", message);
 
-      // broadcast add chatter to chatter list
-      socket.broadcast.emit('add chatter', nickname);
-      socket.emit('add chatter', nickname);
+      // broadcast add chatter to other clients
+      socket.broadcast.emit('add chatter', chatter_data);
     });
   });
 
