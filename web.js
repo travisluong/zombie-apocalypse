@@ -92,15 +92,29 @@ io.sockets.on('connection', function (socket) {
         // check if chatter exists
         redis.hexists('chatters', attacked, function (err, reply) {
           if (reply === 1) {
-            socket.broadcast.emit("messages", nickname + " attacked " + attacked);
-            socket.emit("messages", nickname + " attacked " + attacked);
-            redis.hget("chatters", attacked, function (err, reply) {
-              var attacked_chatter = JSON.parse(reply);
-              attacked_chatter.hp = attacked_chatter.hp - 10;
-              attacked_chatter_nickname = attacked_chatter.nickname;
-              attacked_chatter = JSON.stringify(attacked_chatter);
-              console.log(attacked_chatter);
-              redis.hset("chatters", attacked_chatter_nickname, attacked_chatter);
+
+            // reduce mp of attacker
+            redis.hget("chatters", nickname, function (err, reply) {
+              var attacker = JSON.parse(reply);
+              attacker.mp = attacker.mp - 33;
+
+              // if attacker has enough mana
+              if (attacker.mp >= 0) {
+                attacker = JSON.stringify(attacker);
+                redis.hset("chatters", nickname, attacker);
+                socket.broadcast.emit("messages", nickname + " attacked " + attacked);
+                socket.emit("messages", nickname + " attacked " + attacked);
+                redis.hget("chatters", attacked, function (err, reply) {
+                  var attacked_chatter = JSON.parse(reply);
+                  attacked_chatter.hp = attacked_chatter.hp - 10;
+                  attacked_chatter_nickname = attacked_chatter.nickname;
+                  attacked_chatter = JSON.stringify(attacked_chatter);
+                  console.log(attacked_chatter);
+                  redis.hset("chatters", attacked_chatter_nickname, attacked_chatter);
+                });
+              } else {
+                socket.emit('messages', "You don't have enough mana!");
+              }
             });
           } else {
             socket.emit('messages', attacked + ' does not exist!');
