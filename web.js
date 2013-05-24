@@ -19,6 +19,45 @@ server.listen(port, function () {
   console.log("Listening on " + port);
 });
 
+// parameters: name of attacker and attacked
+var handleAttack = function (nickname, attacked, socket) {
+  // check if chatter exists
+  redis.hexists('chatters', attacked, function (err, reply) {
+    if (reply === 1) {
+
+      // reduce mp of attacker
+      redis.hget("chatters", nickname, function (err, reply) {
+        var attacker = JSON.parse(reply);
+        attacker.mp = attacker.mp - 33;
+
+        // if attacker has enough mana, attack!
+        if (attacker.mp >= 0) {
+
+          // update attacker stats on redis
+          attacker = JSON.stringify(attacker);
+          redis.hset("chatters", nickname, attacker);
+
+          // broadcast attack to all
+          io.sockets.emit("messages", nickname + " attacked " + attacked);
+
+          // get attacked from redis, deal damage, and save back to redis
+          redis.hget("chatters", attacked, function (err, reply) {
+            var attacked_chatter = JSON.parse(reply);
+            attacked_chatter.hp = attacked_chatter.hp - 10;
+            attacked_chatter_nickname = attacked_chatter.nickname;
+            attacked_chatter = JSON.stringify(attacked_chatter);
+            redis.hset("chatters", attacked_chatter_nickname, attacked_chatter);
+        });
+        } else {
+        socket.emit('messages', "You don't have enough mana!");
+        }
+      });
+    } else {
+    socket.emit('messages', attacked + ' does not exist!');
+    }
+  });
+}
+
 // https://devcenter.heroku.com/articles/using-socket-io-with-node-js-on-heroku
 io.configure(function () {
   io.set("transports", ["xhr-polling"]);
@@ -88,38 +127,7 @@ io.sockets.on('connection', function (socket) {
 
       if (split_words[0] === 'kill') {
         var attacked = split_words[1];
-
-        // check if chatter exists
-        redis.hexists('chatters', attacked, function (err, reply) {
-          if (reply === 1) {
-
-            // reduce mp of attacker
-            redis.hget("chatters", nickname, function (err, reply) {
-              var attacker = JSON.parse(reply);
-              attacker.mp = attacker.mp - 33;
-
-              // if attacker has enough mana
-              if (attacker.mp >= 0) {
-                attacker = JSON.stringify(attacker);
-                redis.hset("chatters", nickname, attacker);
-                socket.broadcast.emit("messages", nickname + " attacked " + attacked);
-                socket.emit("messages", nickname + " attacked " + attacked);
-                redis.hget("chatters", attacked, function (err, reply) {
-                  var attacked_chatter = JSON.parse(reply);
-                  attacked_chatter.hp = attacked_chatter.hp - 10;
-                  attacked_chatter_nickname = attacked_chatter.nickname;
-                  attacked_chatter = JSON.stringify(attacked_chatter);
-                  console.log(attacked_chatter);
-                  redis.hset("chatters", attacked_chatter_nickname, attacked_chatter);
-                });
-              } else {
-                socket.emit('messages', "You don't have enough mana!");
-              }
-            });
-          } else {
-            socket.emit('messages', attacked + ' does not exist!');
-          }
-        });
+        handleAttack(nickname, attacked, socket);
       } else {
         var message = nickname + ": " + data;
         socket.broadcast.emit("messages", message);
