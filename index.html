@@ -30,9 +30,7 @@ var socket = io.connect('/', {'sync disconnect on unload' : true});
 
 var insertMessage = function (data) {
   $('#chat_window').append('<div>' + data + '</div>');
-  $('#chat_window').animate({
-    scrollTop: $('#chat_window').height()
-  }, 300);
+  $('#chat_window').scrollTop($('#chat_window')[0].scrollHeight);
 }
 
 var insertChatter = function (data) {

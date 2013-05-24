@@ -110,10 +110,6 @@ io.sockets.on('connection', function (socket) {
         socket.broadcast.emit("messages", message);
         socket.emit("messages", message);
       }
-      redis.hget("chatters", nickname, function (err, reply) {
-        var chatter = JSON.parse(reply);
-        socket.emit('messages', '<span class="hp">' + chatter.hp.toString() + "hp</span>");
-      });
     });
   });
 });
