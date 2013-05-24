@@ -12,11 +12,17 @@
 </head>
 <body>
   <div id="container">
-    <div id="chat_window">
+    <div id="left">
+      <div id="chatters">
+      </div>
     </div>
-    <form action="" id="chat_form">
-      <input type="text" name="chat_input" id="chat_input" autocomplete="off"></input>
-    </form>
+    <div id="right">
+      <div id="chat_window">
+      </div>
+      <form action="" id="chat_form">
+        <input type="text" name="chat_input" id="chat_input" autocomplete="off"></input>
+      </form>
+    </div>
   </div>
 </body>
 <script>
@@ -29,13 +35,21 @@ var insertMessage = function (data) {
   }, 300);
 }
 
+var insertChatter = function (data) {
+  $('#chatters').append('<div>' + data + '</div>');
+}
+
 socket.on('connect', function(data) {
   insertMessage("Server connected...");
+  var nickname = prompt("What is your nickname?");
+  socket.emit('join', nickname);
 });
 
 socket.on('messages', function(data) {
   insertMessage(data);
 })
+
+socket.on('add chatter', insertChatter);
 
 $('#chat_form').submit(function(e) {
   e.preventDefault();

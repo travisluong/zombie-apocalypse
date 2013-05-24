@@ -1,14 +1,15 @@
 body {
   background: #333;
   font-family: monospace;
+  line-height: 1.5em;
 }
 
 .hp {
-  color: green;
+  color: #7A963B;
 }
 
 #container {
-  width: 700px;
+  width: 900px;
   margin: auto;
 }
 
@@ -18,9 +19,8 @@ body {
   background: #000;
   color: #fff;
   margin: 20px auto;
-  padding: 1%;
+  padding: 5px;
   overflow-y: scroll;
-  line-height: 1.5em;
 }
 
 #chat_form {
@@ -38,4 +38,21 @@ body {
   padding: 1%;
   border: 0;
   font-family: monospace;
+}
+
+#right {
+  width: 700px;
+  float: left;
+}
+
+#left {
+  width: 180px;
+  margin: 20px 20px 0 0;
+  float: left;
+  background: #000;
+  color: #7A963B;
+}
+
+#chatters {
+  padding: 5px;
 }

@@ -10,12 +10,6 @@ app.use(express.logger());
 // declare static directory
 app.use(express.static(__dirname + '/public'));
 
-redis.set('foo', 'bar');
-
-redis.get('foo', function (err, value) {
-  console.log('foo is: ' + value);
-});
-
 app.get('/', function (request, response) {
   response.sendfile(__dirname + '/index.html');
 });
@@ -31,71 +25,73 @@ io.configure(function () {
   io.set("polling duration", 10);
 });
 
+// on connection
 io.sockets.on('connection', function (socket) {
   console.log('Client connected...');
 
-  socket.set('state', 1);
-
-  socket.emit('messages', 'Please enter your name.')
-
+  // on disconnect
   socket.on('disconnect', function () {
     console.log('USER DISCONNECTED');
-    socket.get('nickname', function(err, name) {
-      var message = name + " has left the room.";
-      socket.broadcast.emit("messages", message);
+    socket.get('nickname', function (err, nickname) {
+      redis.hdel('chatters', nickname, function (err, reply) {
+        var message = nickname + " has left the room.";
+        socket.broadcast.emit("messages", message);
+      });
     });
   });
 
+  // on join
+  socket.on('join', function (nickname) {
+
+    // emit current chatters to client
+    redis.hkeys('chatters', function (err, nicknames) {
+      nicknames.forEach(function (nickname) {
+        socket.emit('add chatter', nickname);
+      });
+      // set nickname for this client
+      socket.set('nickname', nickname);
+
+      // save chatter to redis
+      var chatter = JSON.stringify({nickname: nickname, hp: 100});
+      redis.hset("chatters", nickname, chatter);
+
+      // broadcast chatter has joined room
+      var message = nickname + " has joined the room.";
+      socket.broadcast.emit("messages", message);
+      socket.emit("messages", message);
+
+      // broadcast add chatter to chatter list
+      socket.broadcast.emit('add chatter', nickname);
+      socket.emit('add chatter', nickname);
+    });
+  });
+
+  // on messages
   socket.on('messages', function (data) {
-    console.log(data);
-
-    socket.get('state', function (err, state) {
-      console.log(state);
-      switch (state) {
-        case 1:
-        socket.set('nickname', data);
-        socket.set('state', 2);
-
-        var player = JSON.stringify({nickname: data, hp: 100});
-
-        redis.hset("players", data, player);
-
-        redis.hget("players", data, function (err, reply) {
-          console.log(reply);
+    socket.get('nickname', function (err, name) {
+      split_words = data.split(' ');
+      if (split_words[0] === 'kill') {
+        var attacked = split_words[1];
+        console.log("attacked" + attacked);
+        socket.broadcast.emit("messages", name + " attacked " + attacked);
+        socket.emit("messages", name + " attacked " + attacked);
+        redis.hget("chatters", attacked, function (err, reply) {
+          var attacked_chatter = JSON.parse(reply);
+          attacked_chatter.hp = attacked_chatter.hp - 10;
+          attacked_chatter_name = attacked_chatter.nickname;
+          attacked_chatter = JSON.stringify(attacked_chatter);
+          console.log(attacked_chatter);
+          redis.hset("chatters", attacked_chatter_name, attacked_chatter);
         });
-
-        var message = data + " has joined the room.";
+      } else {
+        var message = name + ": " + data;
         socket.broadcast.emit("messages", message);
         socket.emit("messages", message);
-        break;
-        case 2:
-        socket.get('nickname', function (err, name) {
-          split_words = data.split(' ');
-          if (split_words[0] === 'kill') {
-            var attacked = split_words[1];
-            console.log("attacked" + attacked);
-            socket.broadcast.emit("messages", name + " attacked " + attacked);
-            socket.emit("messages", name + " attacked " + attacked);
-            redis.hget("players", attacked, function (err, reply) {
-              var attacked_player = JSON.parse(reply);
-              attacked_player.hp = attacked_player.hp - 10;
-              attacked_player_name = attacked_player.nickname;
-              attacked_player = JSON.stringify(attacked_player);
-              console.log(attacked_player);
-              redis.hset("players", attacked_player_name, attacked_player);
-            });
-          } else {
-            var message = name + ": " + data;
-            socket.broadcast.emit("messages", message);
-            socket.emit("messages", message);
-          }
-          redis.hget("players", name, function (err, reply) {
-            var player = JSON.parse(reply);
-            socket.emit('messages', '<span class="hp">' + player.hp.toString() + "hp</span>");
-          });
-        });
-        break;
       }
+      redis.hget("chatters", name, function (err, reply) {
+        var chatter = JSON.parse(reply);
+        socket.emit('messages', '<span class="hp">' + chatter.hp.toString() + "hp</span>");
+      });
     });
   });
 });
