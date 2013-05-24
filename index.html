@@ -38,13 +38,23 @@ var insertChatter = function (data) {
 }
 
 var removeChatter = function (data) {
-  $('#chatters div').filter(function () {
-    return $(this).text() === data;
-  }).remove();
+  $('#chatters ' + '#' + data).remove();
 }
 
 var updateChatter = function (data) {
-  $('#chatters ' + "#" + data.socket_id).html('<div>' + data.nickname + '</div><div><span class="hp">' + data.hp + 'hp</span> <span class="mp">' + data.mp + "mp</span>");
+  var hp_class, mp_class;
+  if (data.alive) {
+    hp_class = "hp";
+    mp_class = "mp";
+  } else {
+    hp_class = "dead";
+    mp_class = "dead";
+  }
+
+  $('#chatters ' + "#" + data.socket_id).html('<div>' +
+    data.nickname + '</div><div><span class="' + hp_class +'">' +
+    data.hp + 'hp</span> <span class="' + mp_class + '">' +
+    data.mp + "mp</span>");
 }
 
 socket.on('connect', function(data) {

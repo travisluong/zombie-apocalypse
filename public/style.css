@@ -12,6 +12,10 @@ body {
   color: #32ffe3;
 }
 
+.dead {
+  color: #991313;
+}
+
 #container {
   width: 900px;
   margin: auto;

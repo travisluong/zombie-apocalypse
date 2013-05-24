@@ -19,43 +19,81 @@ server.listen(port, function () {
   console.log("Listening on " + port);
 });
 
+// respawn timer
+var setRespawnTimer = function (chatter_data) {
+  setTimeout(function () {
+    chatter_data.hp = 100;
+    chatter_data.mp = 100;
+    chatter_data.alive = true;
+    var chatter_json = JSON.stringify(chatter_data);
+    redis.hset('chatters', chatter_data.nickname, chatter_json);
+    io.sockets.emit('messages', chatter_data.nickname + ' has been resurrected!');
+  }, 10000);
+}
+
 // parameters: name of attacker and attacked
 var handleAttack = function (nickname, attacked, socket) {
-  // check if chatter exists
-  redis.hexists('chatters', attacked, function (err, reply) {
-    if (reply === 1) {
+
+  redis.hget("chatters", nickname, function (err, reply) {
+    var attacker = JSON.parse(reply);
+    // first, check if chatter is alive
+    if (attacker.alive === false) {
+      socket.emit('messages', 'You are dead!');
+      return;
+    }
+
+    // check if chatter exists
+    redis.hexists('chatters', attacked, function (err, reply) {
+      if (reply === 0) {
+        socket.emit('messages', attacked + ' does not exist!');
+        return;
+      }
 
       // reduce mp of attacker
-      redis.hget("chatters", nickname, function (err, reply) {
-        var attacker = JSON.parse(reply);
-        attacker.mp = attacker.mp - 33;
+      attacker.mp = attacker.mp - 10;
 
-        // if attacker has enough mana, attack!
-        if (attacker.mp >= 0) {
-
-          // update attacker stats on redis
-          attacker = JSON.stringify(attacker);
-          redis.hset("chatters", nickname, attacker);
-
-          // get attacked from redis, deal damage, and save back to redis
-          redis.hget("chatters", attacked, function (err, reply) {
-            var attacked_chatter = JSON.parse(reply);
-            var damage = Math.round(Math.random() * 30);
-            attacked_chatter.hp = attacked_chatter.hp - damage;
-            attacked_chatter_nickname = attacked_chatter.nickname;
-            attacked_chatter = JSON.stringify(attacked_chatter);
-            redis.hset("chatters", attacked_chatter_nickname, attacked_chatter);
-            // broadcast attack to all
-            io.sockets.emit("messages", nickname +
-              " attacked " + attacked + " for " + damage + " damage!");
-        });
-        } else {
+      // check if attacker has enough mana
+      if (attacker.mp < 0) {
         socket.emit('messages', "You don't have enough mana!");
+        return;
+      }
+
+      // update attacker stats on redis
+      attacker = JSON.stringify(attacker);
+      redis.hset("chatters", nickname, attacker);
+
+      // get attacked from redis
+      redis.hget("chatters", attacked, function (err, reply) {
+        var attacked_chatter = JSON.parse(reply);
+
+        // check if already dead
+        if (attacked_chatter.alive === false) {
+          socket.emit('messages', attacked_chatter.nickname + ' is already dead!');
+          return;
         }
+
+        // deal damage
+        var damage = Math.round(Math.random() * 30);
+        attacked_chatter.hp = attacked_chatter.hp - damage;
+
+        // broadcast attack to all
+        io.sockets.emit("messages", nickname +
+          " attacked " + attacked + " for " + damage + " damage!");
+
+        // check if killed
+        if (attacked_chatter.hp < 1) {
+          io.sockets.emit('messages', nickname + ' has killed ' +
+            attacked_chatter.nickname + '!' );
+          attacked_chatter.alive = false;
+          setRespawnTimer(attacked_chatter);
+        }
+
+        // update attacked_chatter to redis
+        attacked_chatter_nickname = attacked_chatter.nickname;
+        attacked_chatter = JSON.stringify(attacked_chatter);
+        redis.hset("chatters", attacked_chatter_nickname, attacked_chatter);
       });
-    } else {
-    socket.emit('messages', attacked + ' does not exist!');
-    }
+    });
   });
 }
 
@@ -74,9 +112,9 @@ io.sockets.on('connection', function (socket) {
     console.log('USER DISCONNECTED');
     socket.get('nickname', function (err, nickname) {
       redis.hdel('chatters', nickname, function (err, reply) {
-        var message = nickname + " has left the room.";
+        var message = nickname + " rage quit!";
         socket.broadcast.emit("messages", message);
-        socket.broadcast.emit("remove chatter", nickname);
+        socket.broadcast.emit("remove chatter", socket.id);
       });
     });
   });
@@ -89,10 +127,11 @@ io.sockets.on('connection', function (socket) {
 
     // initialize chatter data
     var chatter_data = {
+      socket_id: socket.id,
       nickname: nickname,
+      alive: true,
       hp: 100,
-      mp: 100,
-      socket_id: socket.id
+      mp: 100
     }
 
     // save chatter to redis
@@ -150,18 +189,34 @@ setInterval(function () {
   });
 }, 2000);
 
-// set interval to replenish mana
+// set interval to replenish mana and hp
 setInterval(function () {
   redis.hkeys('chatters', function (err, chatters) {
     chatters.forEach(function (chatter_key) {
       redis.hget('chatters', chatter_key, function (err, chatter_json) {
         var chatter_data = JSON.parse(chatter_json);
-        if (chatter_data.mp <= 100) {
-          chatter_data.mp = chatter_data.mp + 4;
-          if (chatter_data.mp > 100) {
-            chatter_data.mp = 100;
+        var chatter_updated = false;
+
+        if (chatter_data.alive) {
+          if (chatter_data.hp < 100) {
+            chatter_data.hp = chatter_data.hp + 4;
+            chatter_updated = true;
+            if (chatter_data.hp > 100) {
+              chatter_data.hp = 100;
+            }
           }
-          new_chatter_data = JSON.stringify(chatter_data);
+
+          if (chatter_data.mp < 100) {
+            chatter_data.mp = chatter_data.mp + 4;
+            chatter_updated = true;
+            if (chatter_data.mp > 100) {
+              chatter_data.mp = 100;
+            }
+          }
+        }
+
+        if (chatter_updated) {
+          var new_chatter_data = JSON.stringify(chatter_data);
           redis.hset('chatters', chatter_data.nickname, new_chatter_data);
         }
       });
