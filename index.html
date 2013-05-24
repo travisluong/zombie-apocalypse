@@ -43,6 +43,10 @@ var removeChatter = function (data) {
   }).remove();
 }
 
+var updateChatter = function (data) {
+  $('#chatters ' + "#" + data.socket_id).html('<div>' + data.nickname + '</div><div><span class="hp">' + data.hp + 'hp</span> <span class="mp">' + data.mp + "mp</span>");
+}
+
 socket.on('connect', function(data) {
   insertMessage("Server connected...");
   var nickname = prompt("What is your nickname?");
@@ -56,6 +60,8 @@ socket.on('messages', function(data) {
 socket.on('add chatter', insertChatter);
 
 socket.on('remove chatter', removeChatter);
+
+socket.on('update chatter', updateChatter);
 
 $('#chat_form').submit(function(e) {
   e.preventDefault();

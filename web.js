@@ -51,6 +51,7 @@ io.sockets.on('connection', function (socket) {
     var chatter_data = {
       nickname: nickname,
       hp: 100,
+      mp: 100,
       socket_id: socket.id
     }
 
@@ -94,12 +95,12 @@ io.sockets.on('connection', function (socket) {
             socket.broadcast.emit("messages", nickname + " attacked " + attacked);
             socket.emit("messages", nickname + " attacked " + attacked);
             redis.hget("chatters", attacked, function (err, reply) {
-            var attacked_chatter = JSON.parse(reply);
-            attacked_chatter.hp = attacked_chatter.hp - 10;
-            attacked_chatter_nickname = attacked_chatter.nickname;
-            attacked_chatter = JSON.stringify(attacked_chatter);
-            console.log(attacked_chatter);
-            redis.hset("chatters", attacked_chatter_nickname, attacked_chatter);
+              var attacked_chatter = JSON.parse(reply);
+              attacked_chatter.hp = attacked_chatter.hp - 10;
+              attacked_chatter_nickname = attacked_chatter.nickname;
+              attacked_chatter = JSON.stringify(attacked_chatter);
+              console.log(attacked_chatter);
+              redis.hset("chatters", attacked_chatter_nickname, attacked_chatter);
             });
           } else {
             socket.emit('messages', attacked + ' does not exist!');
@@ -113,3 +114,15 @@ io.sockets.on('connection', function (socket) {
     });
   });
 });
+
+// set interval to update chatter stats
+setInterval(function () {
+  redis.hkeys('chatters', function (err, chatters) {
+    chatters.forEach(function (chatter_key) {
+      redis.hget('chatters', chatter_key, function (err, chatter_json) {
+        var chatter_data = JSON.parse(chatter_json);
+        io.sockets.emit('update chatter', chatter_data);
+      });
+    });
+  });
+}, 2000);

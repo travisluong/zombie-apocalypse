@@ -5,7 +5,11 @@ body {
 }
 
 .hp {
-  color: #7A963B;
+  color: #f76631;
+}
+
+.mp {
+  color: #32ffe3;
 }
 
 #container {
@@ -50,9 +54,13 @@ body {
   margin: 20px 20px 0 0;
   float: left;
   background: #000;
-  color: #7A963B;
+  color: #fff;
 }
 
 #chatters {
   padding: 5px;
+}
+
+#chatters>div {
+  margin: 10px 0;
 }
