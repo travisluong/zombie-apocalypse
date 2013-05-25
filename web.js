@@ -294,3 +294,47 @@ setInterval(function () {
 setInterval(function () {
   io.sockets.emit('update zombies', zombies);
 }, 5000);
+
+var zombieAttack = function (zombie, nickname) {
+  redis.hget('chatters', nickname, function (err, reply) {
+    var victim = JSON.parse(reply);
+
+    // deal damage
+    var damage = Math.round(Math.random() * 30);
+    victim.hp = victim.hp - damage;
+
+    if (victim.alive) {
+      var message = 'zombie ' + zombie + ' deals ' +
+        damage + ' damage to ' + nickname;
+
+      io.sockets.emit('messages', message);
+    }
+
+    // save victim to redis
+    new_victim_json = JSON.stringify(victim);
+    redis.hset('chatters', nickname, new_victim_json);
+  });
+}
+
+// set zombie attack interval
+setInterval(function () {
+  redis.hkeys('chatters', function (err, chatters) {
+    var num_chatters = chatters.length;
+
+    for (var zombie in zombies) {
+      var random_number = Math.floor(Math.random() * num_chatters);
+      var random_victim_nickname = chatters[random_number];
+      var random_time_interval = Math.floor(Math.random() * 5000);
+
+      // we use with statement to create a new scope so each zombie
+      // can take its turn feasting and not just the last
+      // since closures are not created in loops
+      with ({zombie_num: zombie}) {
+        // attack at a random time between 1 to 10 seconds
+        setTimeout(function () {
+          zombieAttack(zombie_num, random_victim_nickname);
+        }, random_time_interval);
+      }
+    }
+  });
+}, 5000);
