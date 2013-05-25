@@ -6,6 +6,11 @@ var redis = require('redis-url').connect(process.env.REDISTOGO_URL);
 var zombies = {};
 var zombie_counter = 0;
 
+// declare constants
+var ZOMBIE_SPAWN_RATE = 10000;
+var ZOMBIE_ATTACK_RATE = 10000;
+var CHATTER_RESPAWN_RATE = 30000;
+
 // enable logging
 //app.use(express.logger());
 
@@ -30,7 +35,7 @@ var setRespawnTimer = function (chatter_data) {
     var chatter_json = JSON.stringify(chatter_data);
     redis.hset('chatters', chatter_data.nickname, chatter_json);
     io.sockets.emit('messages', chatter_data.nickname + ' has been resurrected!');
-  }, 10000);
+  }, CHATTER_RESPAWN_RATE);
 }
 
 // parameters: name of attacker and attacked
@@ -278,8 +283,9 @@ setInterval(function () {
 
 // spawn zombies
 setInterval(function () {
+  var num_chatters = io.sockets.clients();
   num_zombies = Object.keys(zombies).length;
-  if (num_zombies > 4) {
+  if (num_zombies > num_chatters.length) {
     return;
   }
   zombie_counter = zombie_counter + 1;
@@ -288,7 +294,8 @@ setInterval(function () {
     hp: 100
   }
   zombies[zombie_counter] = zombie;
-}, 5000);
+  io.sockets.emit('messages', 'A zombie has entered the room!')
+}, ZOMBIE_SPAWN_RATE);
 
 // send zombie to clients
 setInterval(function () {
@@ -300,13 +307,25 @@ var zombieAttack = function (zombie, nickname) {
     var victim = JSON.parse(reply);
 
     // deal damage
-    var damage = Math.round(Math.random() * 30);
+    var damage = Math.round(Math.random() * 15);
     victim.hp = victim.hp - damage;
 
     if (victim.alive) {
-      var message = 'zombie ' + zombie + ' deals ' +
-        damage + ' damage to ' + nickname;
+      var message = 'zombie ' + zombie + ' bites ' +
+        nickname + ' for ' + damage + ' damage!';
 
+      io.sockets.emit('messages', message);
+
+      if (victim.hp < 1) {
+        var message = 'zombie ' + zombie + ' has killed ' +
+          nickname + '!';
+        io.sockets.emit('messages', message);
+        victim.alive = false;
+        setRespawnTimer(victim);
+      }
+    } else {
+      var message = 'zombie ' + zombie + ' is feasting on the dead body of ' +
+        nickname + '!';
       io.sockets.emit('messages', message);
     }
 
@@ -324,17 +343,21 @@ setInterval(function () {
     for (var zombie in zombies) {
       var random_number = Math.floor(Math.random() * num_chatters);
       var random_victim_nickname = chatters[random_number];
-      var random_time_interval = Math.floor(Math.random() * 5000);
+      var random_time_interval = Math.floor(Math.random() * ZOMBIE_ATTACK_RATE);
 
       // we use with statement to create a new scope so each zombie
       // can take its turn feasting and not just the last
       // since closures are not created in loops
-      with ({zombie_num: zombie}) {
+      with ({
+        zombie: zombie,
+        random_victim_nickname: random_victim_nickname,
+        random_time_interval: random_time_interval
+      }) {
         // attack at a random time between 1 to 10 seconds
         setTimeout(function () {
-          zombieAttack(zombie_num, random_victim_nickname);
+          zombieAttack(zombie, random_victim_nickname);
         }, random_time_interval);
       }
     }
   });
-}, 5000);
+}, ZOMBIE_ATTACK_RATE);
