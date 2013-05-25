@@ -59,6 +59,7 @@ var updateChatter = function (data) {
 
 socket.on('connect', function(data) {
   insertMessage("Server connected...");
+  $('#chatters').empty();
   var nickname = prompt("What is your nickname?");
   socket.emit('join', nickname);
 });
