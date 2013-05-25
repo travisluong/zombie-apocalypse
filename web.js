@@ -3,6 +3,8 @@ var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
 var redis = require('redis-url').connect(process.env.REDISTOGO_URL);
+var zombies = {};
+var zombie_counter = 0;
 
 // enable logging
 //app.use(express.logger());
@@ -97,6 +99,53 @@ var handleAttack = function (nickname, attacked, socket) {
   });
 }
 
+// handle attacking zombie
+var handleAttackZombie = function (nickname, zombie, socket) {
+  redis.hget('chatters', nickname, function (err, reply) {
+    var attacker = JSON.parse(reply);
+
+    // check if attacker is alive
+    if (attacker.alive === false) {
+      socket.emit('messages', 'You are dead!');
+      return;
+    }
+
+    // check if zombie exists
+    if (zombies[zombie] === undefined) {
+      socket.emit('messages', 'What zombie?')
+      return;
+    }
+
+    // reduce mp of attacker
+    attacker.mp = attacker.mp - 10;
+
+    // check if attacker has enough mana
+    if (attacker.mp < 0) {
+      socket.emit('messages', "You don't have enough mana!");
+      return;
+    }
+
+    // update attacker stats on redis
+    attacker = JSON.stringify(attacker);
+    redis.hset("chatters", nickname, attacker);
+
+    // deal damage
+    var damage = Math.round(Math.random() * 30);
+    zombies[zombie].hp = zombies[zombie].hp - damage;
+
+    // broadcast attack to all
+    io.sockets.emit("messages", nickname +
+      " attacked zombie " + zombie + " for " + damage + " damage!");
+
+    // check if killed
+    if (zombies[zombie].hp < 1) {
+      io.sockets.emit('messages', nickname + ' has killed zombie ' +
+        zombie + '!' );
+      delete zombies[zombie];
+    }
+  })
+}
+
 // https://devcenter.heroku.com/articles/using-socket-io-with-node-js-on-heroku
 io.configure(function () {
   io.set("transports", ["xhr-polling"]);
@@ -168,6 +217,9 @@ io.sockets.on('connection', function (socket) {
       if (split_words[0] === 'kill') {
         var attacked = split_words[1];
         handleAttack(nickname, attacked, socket);
+      } else if (split_words[0] === 'shoot') {
+        var zombie = split_words[1];
+        handleAttackZombie(nickname, zombie, socket);
       } else {
         var message = nickname + ": " + data;
         socket.broadcast.emit("messages", message);
@@ -223,3 +275,22 @@ setInterval(function () {
     });
   });
 }, 4000);
+
+// spawn zombies
+setInterval(function () {
+  num_zombies = Object.keys(zombies).length;
+  if (num_zombies > 4) {
+    return;
+  }
+  zombie_counter = zombie_counter + 1;
+  zombie = {
+    id: zombie_counter,
+    hp: 100
+  }
+  zombies[zombie_counter] = zombie;
+}, 5000);
+
+// send zombie to clients
+setInterval(function () {
+  io.sockets.emit('update zombies', zombies);
+}, 5000);

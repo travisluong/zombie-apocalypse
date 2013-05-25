@@ -6,22 +6,30 @@
   <meta name="keywords" content="Node.js MUD">
   <title>Node.js MUD</title>
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
+  <link href='http://fonts.googleapis.com/css?family=Butcherman' rel='stylesheet' type='text/css'>
   <link rel="stylesheet" href="style.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
+  <div id="header">
+    <h1>Zombie Apocalypse</h1>
+  </div>
   <div id="container">
     <div id="left">
       <div id="chatters">
       </div>
     </div>
-    <div id="right">
+    <div id="middle">
       <div id="chat_window">
       </div>
       <form action="" id="chat_form">
         <input type="text" name="chat_input" id="chat_input" autocomplete="off"></input>
       </form>
+    </div>
+    <div id="right">
+      <div id="zombies">
+      </div>
     </div>
   </div>
 </body>
@@ -57,6 +65,18 @@ var updateChatter = function (data) {
     data.mp + "mp</span>");
 }
 
+var updateZombies = function (data) {
+  $('#zombies').empty();
+
+  // data is a hash of zombies
+  for (zombie_object in data) {
+    zombie = data[zombie_object];
+    $('#zombies').append('<div id="' + zombie.id + '">' +
+      '<div>zombie ' + zombie.id + '</div><span class="hp">' +
+      zombie.hp  + 'hp</span></div>');
+  }
+}
+
 socket.on('connect', function(data) {
   insertMessage("Server connected...");
   $('#chatters').empty();
@@ -73,6 +93,8 @@ socket.on('add chatter', insertChatter);
 socket.on('remove chatter', removeChatter);
 
 socket.on('update chatter', updateChatter);
+
+socket.on('update zombies', updateZombies);
 
 $('#chat_form').submit(function(e) {
   e.preventDefault();
