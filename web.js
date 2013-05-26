@@ -85,7 +85,8 @@ io.sockets.on('connection', function (socket) {
       hp: CHATTER_HP,
       ammo: CHATTER_AMMO,
       stamina: CHATTER_STAMINA,
-      first_aid_kit: CHATTER_FIRST_AID_KIT
+      first_aid_kit: CHATTER_FIRST_AID_KIT,
+      score: 0
     }
 
     // save chatter to redis

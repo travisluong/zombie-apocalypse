@@ -149,10 +149,6 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
     // reduce stamina of attacker
     attacker.stamina = attacker.stamina - CHATTER_ATTACK_COST;
 
-    // update attacker stats on redis
-    attacker = JSON.stringify(attacker);
-    redis.hset("chatters", nickname, attacker);
-
     // deal damage
     var damage = Math.round(Math.random() * CHATTER_ATTACK_DAMAGE);
     zombies[zombie].hp = zombies[zombie].hp - damage;
@@ -166,7 +162,12 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
       io.sockets.emit('messages', nickname + ' killed zombie ' +
         zombie + '!' );
       delete zombies[zombie];
+      attacker.score = attacker.score + 1;
     }
+
+    // update attacker stats on redis
+    attacker = JSON.stringify(attacker);
+    redis.hset("chatters", nickname, attacker);
   })
 }
 
@@ -189,10 +190,6 @@ exports.handleStabZombie = function (nickname, zombie, socket) {
     // reduce stamina of attacker
     attacker.stamina = attacker.stamina - CHATTER_STAB_COST;
 
-    // update attacker stats on redis
-    attacker = JSON.stringify(attacker);
-    redis.hset("chatters", nickname, attacker);
-
     // deal damage
     var damage = Math.round(Math.random() * CHATTER_STAB_DAMAGE);
     zombies[zombie].hp = zombies[zombie].hp - damage;
@@ -206,7 +203,12 @@ exports.handleStabZombie = function (nickname, zombie, socket) {
       io.sockets.emit('messages', nickname + ' killed zombie ' +
         zombie + '!' );
       delete zombies[zombie];
+      attacker.score = attacker.score + 1;
     }
+
+    // update attacker stats on redis
+    attacker = JSON.stringify(attacker);
+    redis.hset("chatters", nickname, attacker);
   })
 }
 

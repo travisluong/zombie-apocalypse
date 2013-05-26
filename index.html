@@ -50,29 +50,29 @@ var removeChatter = function (data) {
 }
 
 var updateChatter = function (data) {
-  var hp_class, ammo_class;
+  var hp_class, ammo_class, stamina_class, first_aid_class, score_class;
   if (data.alive) {
     hp_class = "hp";
     ammo_class = "ammo";
-    first_aid_class = "first_aid"
-    if (data.stamina > 99) {
-      stamina_class = "stamina";
-    } else {
-      stamina_class = "dead";
-    }
+    stamina_class = "stamina";
+    first_aid_class = "first_aid";
+    score_class = "score";
   } else {
     hp_class = "dead";
     ammo_class = "dead";
     stamina_class = "dead";
     first_aid_class = "dead";
+    score_class = "dead";
   }
 
-  $('#chatters ' + "#" + data.socket_id).html('<div>' +
-    data.nickname + '</div><div><span class="' + hp_class +'">' +
-    data.hp + 'H</span> <span class="' + ammo_class + '">' +
-    data.ammo + "A</span>" + ' <span class="' + stamina_class + '">' +
-    data.stamina + 'S</span>' + ' <span class="' + first_aid_class + '">' +
-    data.first_aid_kit + 'F</span>' );
+  $('#chatters ' + "#" + data.socket_id).html(
+    '<div>' + data.nickname + '</div><div>' +
+    '<span class="' + hp_class +'">' + data.hp + 'H</span> ' +
+    '<span class="' + ammo_class + '">' + data.ammo + 'A</span> ' +
+    '<span class="' + stamina_class + '">' + data.stamina + 'S</span> ' +
+    '<span class="' + first_aid_class + '">' + data.first_aid_kit + 'F</span> ' +
+    '<span class="' + score_class + '">' + data.score + 'Z</span>' +
+    '</div>' );
 }
 
 var updateZombies = function (data) {
