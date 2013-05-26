@@ -82,7 +82,7 @@ exports.handleAttackChatter = function (nickname, attacked, socket) {
         }
 
         // deal damage
-        var damage = Math.round(Math.random() * 30);
+        var damage = Math.round(Math.random() * CHATTER_ATTACK_DAMAGE);
         attacked_chatter.hp = attacked_chatter.hp - damage;
 
         // broadcast attack to all
@@ -106,6 +106,25 @@ exports.handleAttackChatter = function (nickname, attacked, socket) {
   });
 }
 
+var isZombiePresent = function (zombie, socket) {
+  // check if any zombie exists
+  if (Object.keys(zombies).length === 0) {
+    socket.emit('messages', 'There are no zombies here...');
+    return false;
+  }
+
+  // check if user selected zombie exists
+  // if not, default to first zombie on list
+  if (zombies[zombie] === undefined) {
+    for (var z in zombies) {
+      return z;
+    }
+  }
+
+  // if user selected zombie exists, return it
+  return zombie;
+}
+
 // handle attacking zombie
 exports.handleAttackZombie = function (nickname, zombie, socket) {
   redis.hget('chatters', nickname, function (err, reply) {
@@ -116,9 +135,9 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
       return;
     }
 
-    // check if zombie exists
-    if (zombies[zombie] === undefined) {
-      socket.emit('messages', 'What zombie? Are you mad?');
+    // check if zombie is present
+    zombie = isZombiePresent(zombie, socket);
+    if (zombie === false) {
       return;
     }
 
@@ -161,8 +180,9 @@ exports.handleStabZombie = function (nickname, zombie, socket) {
     }
 
     // check if zombie exists
-    if (zombies[zombie] === undefined) {
-      socket.emit('messages', 'What zombie?')
+    // check if zombie is present
+    zombie = isZombiePresent(zombie, socket);
+    if (zombie === false) {
       return;
     }
 
