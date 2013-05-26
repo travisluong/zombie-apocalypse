@@ -1,15 +1,27 @@
-var express = require("express");
-var app = express();
-var server = require('http').createServer(app);
-var io = require('socket.io').listen(server);
-var redis = require('redis-url').connect(process.env.REDISTOGO_URL);
-var zombies = {};
-var zombie_counter = 0;
+// global modules
+global.express = require("express");
+global.app = express();
+global.server = require('http').createServer(app);
+global.io = require('socket.io').listen(server);
+global.redis = require('redis-url').connect(process.env.REDISTOGO_URL);
 
-// declare constants
-var ZOMBIE_SPAWN_RATE = 10000;
-var ZOMBIE_ATTACK_RATE = 10000;
-var CHATTER_RESPAWN_RATE = 30000;
+// global variables
+global.zombies = {}
+global.zombie_counter = 0;
+
+// global constants
+global.ZOMBIE_SPAWN_RATE = 10000;
+global.ZOMBIE_ATTACK_RATE = 10000;
+global.CHATTER_RESPAWN_RATE = 30000;
+global.CHATTER_HP = 100;
+global.CHATTER_MP = 100;
+global.HP_REGEN_RATE = 4;
+global.MP_REGEN_RATE = 4;
+global.REGEN_INTERVAL = 4000;
+
+// custom global modules
+global.zombie_actions = require('./zombies.js');
+global.human_actions = require('./humans.js');
 
 // enable logging
 //app.use(express.logger());
@@ -25,131 +37,6 @@ var port = process.env.PORT || 5000;
 server.listen(port, function () {
   console.log("Listening on " + port);
 });
-
-// respawn timer
-var setRespawnTimer = function (chatter_data) {
-  setTimeout(function () {
-    chatter_data.hp = 100;
-    chatter_data.mp = 100;
-    chatter_data.alive = true;
-    var chatter_json = JSON.stringify(chatter_data);
-    redis.hset('chatters', chatter_data.nickname, chatter_json);
-    io.sockets.emit('messages', chatter_data.nickname + ' has been resurrected!');
-  }, CHATTER_RESPAWN_RATE);
-}
-
-// parameters: name of attacker and attacked
-var handleAttack = function (nickname, attacked, socket) {
-
-  redis.hget("chatters", nickname, function (err, reply) {
-    var attacker = JSON.parse(reply);
-    // first, check if chatter is alive
-    if (attacker.alive === false) {
-      socket.emit('messages', 'You are dead!');
-      return;
-    }
-
-    // check if chatter exists
-    redis.hexists('chatters', attacked, function (err, reply) {
-      if (reply === 0) {
-        socket.emit('messages', attacked + ' does not exist!');
-        return;
-      }
-
-      // reduce mp of attacker
-      attacker.mp = attacker.mp - 10;
-
-      // check if attacker has enough mana
-      if (attacker.mp < 0) {
-        socket.emit('messages', "You don't have enough mana!");
-        return;
-      }
-
-      // update attacker stats on redis
-      attacker = JSON.stringify(attacker);
-      redis.hset("chatters", nickname, attacker);
-
-      // get attacked from redis
-      redis.hget("chatters", attacked, function (err, reply) {
-        var attacked_chatter = JSON.parse(reply);
-
-        // check if already dead
-        if (attacked_chatter.alive === false) {
-          socket.emit('messages', attacked_chatter.nickname + ' is already dead!');
-          return;
-        }
-
-        // deal damage
-        var damage = Math.round(Math.random() * 30);
-        attacked_chatter.hp = attacked_chatter.hp - damage;
-
-        // broadcast attack to all
-        io.sockets.emit("messages", nickname +
-          " attacked " + attacked + " for " + damage + " damage!");
-
-        // check if killed
-        if (attacked_chatter.hp < 1) {
-          io.sockets.emit('messages', nickname + ' has killed ' +
-            attacked_chatter.nickname + '!' );
-          attacked_chatter.alive = false;
-          setRespawnTimer(attacked_chatter);
-        }
-
-        // update attacked_chatter to redis
-        attacked_chatter_nickname = attacked_chatter.nickname;
-        attacked_chatter = JSON.stringify(attacked_chatter);
-        redis.hset("chatters", attacked_chatter_nickname, attacked_chatter);
-      });
-    });
-  });
-}
-
-// handle attacking zombie
-var handleAttackZombie = function (nickname, zombie, socket) {
-  redis.hget('chatters', nickname, function (err, reply) {
-    var attacker = JSON.parse(reply);
-
-    // check if attacker is alive
-    if (attacker.alive === false) {
-      socket.emit('messages', 'You are dead!');
-      return;
-    }
-
-    // check if zombie exists
-    if (zombies[zombie] === undefined) {
-      socket.emit('messages', 'What zombie?')
-      return;
-    }
-
-    // reduce mp of attacker
-    attacker.mp = attacker.mp - 10;
-
-    // check if attacker has enough mana
-    if (attacker.mp < 0) {
-      socket.emit('messages', "You don't have enough mana!");
-      return;
-    }
-
-    // update attacker stats on redis
-    attacker = JSON.stringify(attacker);
-    redis.hset("chatters", nickname, attacker);
-
-    // deal damage
-    var damage = Math.round(Math.random() * 30);
-    zombies[zombie].hp = zombies[zombie].hp - damage;
-
-    // broadcast attack to all
-    io.sockets.emit("messages", nickname +
-      " attacked zombie " + zombie + " for " + damage + " damage!");
-
-    // check if killed
-    if (zombies[zombie].hp < 1) {
-      io.sockets.emit('messages', nickname + ' has killed zombie ' +
-        zombie + '!' );
-      delete zombies[zombie];
-    }
-  })
-}
 
 // https://devcenter.heroku.com/articles/using-socket-io-with-node-js-on-heroku
 io.configure(function () {
@@ -184,8 +71,8 @@ io.sockets.on('connection', function (socket) {
       socket_id: socket.id,
       nickname: nickname,
       alive: true,
-      hp: 100,
-      mp: 100
+      hp: CHATTER_HP,
+      mp: CHATTER_MP
     }
 
     // save chatter to redis
@@ -221,10 +108,10 @@ io.sockets.on('connection', function (socket) {
 
       if (split_words[0] === 'kill') {
         var attacked = split_words[1];
-        handleAttack(nickname, attacked, socket);
+        human_actions.handleAttack(nickname, attacked, socket);
       } else if (split_words[0] === 'shoot') {
         var zombie = split_words[1];
-        handleAttackZombie(nickname, zombie, socket);
+        human_actions.handleAttackZombie(nickname, zombie, socket);
       } else {
         var message = nickname + ": " + data;
         socket.broadcast.emit("messages", message);
@@ -234,130 +121,3 @@ io.sockets.on('connection', function (socket) {
   });
 });
 
-// set interval to update chatter stats
-setInterval(function () {
-  redis.hkeys('chatters', function (err, chatters) {
-    chatters.forEach(function (chatter_key) {
-      redis.hget('chatters', chatter_key, function (err, chatter_json) {
-        var chatter_data = JSON.parse(chatter_json);
-        io.sockets.emit('update chatter', chatter_data);
-      });
-    });
-  });
-}, 2000);
-
-// set interval to replenish mana and hp
-setInterval(function () {
-  redis.hkeys('chatters', function (err, chatters) {
-    chatters.forEach(function (chatter_key) {
-      redis.hget('chatters', chatter_key, function (err, chatter_json) {
-        var chatter_data = JSON.parse(chatter_json);
-        var chatter_updated = false;
-
-        if (chatter_data.alive) {
-          if (chatter_data.hp < 100) {
-            chatter_data.hp = chatter_data.hp + 4;
-            chatter_updated = true;
-            if (chatter_data.hp > 100) {
-              chatter_data.hp = 100;
-            }
-          }
-
-          if (chatter_data.mp < 100) {
-            chatter_data.mp = chatter_data.mp + 4;
-            chatter_updated = true;
-            if (chatter_data.mp > 100) {
-              chatter_data.mp = 100;
-            }
-          }
-        }
-
-        if (chatter_updated) {
-          var new_chatter_data = JSON.stringify(chatter_data);
-          redis.hset('chatters', chatter_data.nickname, new_chatter_data);
-        }
-      });
-    });
-  });
-}, 4000);
-
-// spawn zombies
-setInterval(function () {
-  var num_chatters = io.sockets.clients();
-  num_zombies = Object.keys(zombies).length;
-  if (num_zombies > num_chatters.length) {
-    return;
-  }
-  zombie_counter = zombie_counter + 1;
-  zombie = {
-    id: zombie_counter,
-    hp: 100
-  }
-  zombies[zombie_counter] = zombie;
-  io.sockets.emit('messages', 'A zombie has entered the room!')
-}, ZOMBIE_SPAWN_RATE);
-
-// send zombie to clients
-setInterval(function () {
-  io.sockets.emit('update zombies', zombies);
-}, 5000);
-
-var zombieAttack = function (zombie, nickname) {
-  redis.hget('chatters', nickname, function (err, reply) {
-    var victim = JSON.parse(reply);
-
-    // deal damage
-    var damage = Math.round(Math.random() * 15);
-    victim.hp = victim.hp - damage;
-
-    if (victim.alive) {
-      var message = 'zombie ' + zombie + ' bites ' +
-        nickname + ' for ' + damage + ' damage!';
-
-      io.sockets.emit('messages', message);
-
-      if (victim.hp < 1) {
-        var message = 'zombie ' + zombie + ' has killed ' +
-          nickname + '!';
-        io.sockets.emit('messages', message);
-        victim.alive = false;
-        setRespawnTimer(victim);
-      }
-    } else {
-      var message = 'zombie ' + zombie + ' is feasting on the dead body of ' +
-        nickname + '!';
-      io.sockets.emit('messages', message);
-    }
-
-    // save victim to redis
-    new_victim_json = JSON.stringify(victim);
-    redis.hset('chatters', nickname, new_victim_json);
-  });
-}
-
-// set zombie attack interval
-setInterval(function () {
-  redis.hkeys('chatters', function (err, chatters) {
-    var num_chatters = chatters.length;
-
-    for (var zombie in zombies) {
-      var random_number = Math.floor(Math.random() * num_chatters);
-      var random_victim_nickname = chatters[random_number];
-      var random_time_interval = Math.floor(Math.random() * ZOMBIE_ATTACK_RATE);
-
-      // we use with statement to create a new scope so each zombie
-      // can take its turn feasting and not just the last
-      // since closures are not created in loops
-      with ({
-        zombie: zombie,
-        random_victim_nickname: random_victim_nickname,
-        random_time_interval: random_time_interval
-      }) {
-        // attack at a random time between 1 to 10 seconds
-        setTimeout(function () {
-          zombieAttack(zombie, random_victim_nickname);
-        }, random_time_interval);
-      }
-    }
-  });
-}, ZOMBIE_ATTACK_RATE);
