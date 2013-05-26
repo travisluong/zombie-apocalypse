@@ -24,7 +24,7 @@ var zombieAttack = function (zombie, nickname) {
     var victim = JSON.parse(reply);
 
     // deal damage
-    var damage = Math.round(Math.random() * 100);
+    var damage = Math.round(Math.random() * ZOMBIE_ATTACK_DAMAGE);
     victim.hp = victim.hp - damage;
 
     if (victim.alive) {

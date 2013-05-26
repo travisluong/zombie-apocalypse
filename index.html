@@ -54,15 +54,22 @@ var updateChatter = function (data) {
   if (data.alive) {
     hp_class = "hp";
     ammo_class = "ammo";
+    if (data.stamina > 99) {
+      stamina_class = "stamina";
+    } else {
+      stamina_class = "dead";
+    }
   } else {
     hp_class = "dead";
     ammo_class = "dead";
+    stamina_class = "dead";
   }
 
   $('#chatters ' + "#" + data.socket_id).html('<div>' +
     data.nickname + '</div><div><span class="' + hp_class +'">' +
     data.hp + 'hp</span> <span class="' + ammo_class + '">' +
-    data.ammo + "ammo</span>");
+    data.ammo + "am</span>" + ' <span class="' + stamina_class + '">' +
+    data.stamina + 'st</span>' );
 }
 
 var updateZombies = function (data) {

@@ -33,7 +33,7 @@ exports.handleAttack = function (nickname, attacked, socket) {
 
       // check if attacker has enough mana
       if (attacker.ammo < 0) {
-        socket.emit('messages', "You don't have enough mana!");
+        socket.emit('messages', "You are out of ammo!");
         return;
       }
 
@@ -87,6 +87,12 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
       return;
     }
 
+    // check if enough stamina
+    if (attacker.stamina < 100) {
+      socket.emit('messages', 'You are out of stamina!');
+      return;
+    }
+
     // check if zombie exists
     if (zombies[zombie] === undefined) {
       socket.emit('messages', 'What zombie?')
@@ -96,18 +102,21 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
     // reduce ammo of attacker
     attacker.ammo = attacker.ammo - 1;
 
-    // check if attacker has enough mana
+    // check if attacker has enough ammo
     if (attacker.ammo < 0) {
       socket.emit('messages', "You are out of ammo!");
       return;
     }
+
+    // reduce stamina of attacker
+    attacker.stamina = 0;
 
     // update attacker stats on redis
     attacker = JSON.stringify(attacker);
     redis.hset("chatters", nickname, attacker);
 
     // deal damage
-    var damage = Math.round(Math.random() * 30);
+    var damage = Math.round(Math.random() * CHATTER_ATTACK_DAMAGE);
     zombies[zombie].hp = zombies[zombie].hp - damage;
 
     // broadcast attack to all
@@ -135,7 +144,7 @@ setInterval(function () {
   });
 }, 2000);
 
-// set interval to replenish mana and hp
+// set interval to replenish mana, hp, and stamina
 setInterval(function () {
   redis.hkeys('chatters', function (err, chatters) {
     chatters.forEach(function (chatter_key) {
@@ -144,19 +153,27 @@ setInterval(function () {
         var chatter_updated = false;
 
         if (chatter_data.alive) {
-          if (chatter_data.hp < 100) {
+          if (chatter_data.hp < CHATTER_HP) {
             chatter_data.hp = chatter_data.hp + HP_REGEN_RATE;
             chatter_updated = true;
-            if (chatter_data.hp > 100) {
-              chatter_data.hp = 100;
+            if (chatter_data.hp > CHATTER_HP) {
+              chatter_data.hp = CHATTER_HP;
             }
           }
 
-          if (chatter_data.ammo < 100) {
+          if (chatter_data.ammo < CHATTER_AMMO) {
             chatter_data.ammo = chatter_data.ammo + AMMO_REGEN_RATE;
             chatter_updated = true;
-            if (chatter_data.ammo > 100) {
-              chatter_data.ammo = 100;
+            if (chatter_data.ammo > CHATTER_AMMO) {
+              chatter_data.ammo = CHATTER_AMMO;
+            }
+          }
+
+          if (chatter_data.stamina < CHATTER_STAMINA) {
+            chatter_data.stamina = chatter_data.stamina + STAMINA_REGEN_RATE;
+            chatter_updated = true;
+            if (chatter_data.stamina > CHATTER_STAMINA) {
+              chatter_data.stamina = CHATTER_STAMINA;
             }
           }
         }

@@ -12,14 +12,18 @@ global.zombie_counter = 0;
 // global constants
 global.ZOMBIE_SPAWN_RATE = 10000;
 global.ZOMBIE_ATTACK_RATE = 10000;
+global.ZOMBIE_ATTACK_DAMAGE = 20;
 global.ZOMBIES_PER_CHATTER = 5;
 global.ZOMBIE_HP = 100;
 global.CHATTER_RESPAWN_RATE = 30000;
 global.CHATTER_HP = 100;
-global.CHATTER_AMMO = 100;
-global.HP_REGEN_RATE = 4;
+global.CHATTER_AMMO = 12;
+global.CHATTER_STAMINA = 100;
+global.CHATTER_ATTACK_DAMAGE = 100;
+global.HP_REGEN_RATE = 1;
 global.AMMO_REGEN_RATE = 0;
-global.REGEN_INTERVAL = 4000;
+global.STAMINA_REGEN_RATE = 25;
+global.REGEN_INTERVAL = 2000;
 
 // custom global modules
 global.zombie_actions = require('./zombies.js');
@@ -74,7 +78,8 @@ io.sockets.on('connection', function (socket) {
       nickname: nickname,
       alive: true,
       hp: CHATTER_HP,
-      ammo: CHATTER_AMMO
+      ammo: CHATTER_AMMO,
+      stamina: CHATTER_STAMINA
     }
 
     // save chatter to redis
