@@ -2,13 +2,13 @@
 setInterval(function () {
   var num_chatters = io.sockets.clients();
   num_zombies = Object.keys(zombies).length;
-  if (num_zombies > num_chatters.length) {
+  if (num_zombies >= num_chatters.length * ZOMBIES_PER_CHATTER) {
     return;
   }
   zombie_counter = zombie_counter + 1;
   zombie = {
     id: zombie_counter,
-    hp: 100
+    hp: ZOMBIE_HP
   }
   zombies[zombie_counter] = zombie;
   io.sockets.emit('messages', 'A zombie has entered the room!')

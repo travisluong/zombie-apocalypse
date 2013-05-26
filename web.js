@@ -12,6 +12,8 @@ global.zombie_counter = 0;
 // global constants
 global.ZOMBIE_SPAWN_RATE = 10000;
 global.ZOMBIE_ATTACK_RATE = 10000;
+global.ZOMBIES_PER_CHATTER = 5;
+global.ZOMBIE_HP = 100;
 global.CHATTER_RESPAWN_RATE = 30000;
 global.CHATTER_HP = 100;
 global.CHATTER_MP = 100;
