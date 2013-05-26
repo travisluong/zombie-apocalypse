@@ -1,5 +1,5 @@
 // is attacker ready?
-var isAttackerReady = function (attacker, socket) {
+var isAttackerReady = function (attacker, stamina_cost, socket) {
 
     // check if attacker is alive
     if (attacker.alive === false) {
@@ -8,8 +8,8 @@ var isAttackerReady = function (attacker, socket) {
     }
 
     // check if enough stamina
-    if (attacker.stamina < 100) {
-      socket.emit('messages', 'You are out of stamina!');
+    if (attacker.stamina < stamina_cost) {
+      socket.emit('messages', 'You do not have enough stamina!');
       return false;
     }
 
@@ -50,7 +50,7 @@ exports.handleAttackChatter = function (nickname, attacked, socket) {
     var attacker = JSON.parse(reply);
 
     // if basic attack conditions are not met, stop the attack
-    if (isAttackerReady(attacker, socket) === false) {
+    if (isAttackerReady(attacker, CHATTER_ATTACK_COST, socket) === false) {
       return;
     }
 
@@ -65,7 +65,7 @@ exports.handleAttackChatter = function (nickname, attacked, socket) {
         return;
       }
 
-      attacker.stamina = 0;
+      attacker.stamina = attacker.stamina - CHATTER_ATTACK_COST;
 
       // update attacker stats on redis
       attacker = JSON.stringify(attacker);
@@ -112,7 +112,7 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
     var attacker = JSON.parse(reply);
 
     // if basic attack conditions are not met, stop the attack
-    if (isAttackerReady(attacker, socket) === false) {
+    if (isAttackerReady(attacker, CHATTER_ATTACK_COST, socket) === false) {
       return;
     }
 
@@ -128,7 +128,7 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
     }
 
     // reduce stamina of attacker
-    attacker.stamina = 0;
+    attacker.stamina = attacker.stamina - CHATTER_ATTACK_COST;
 
     // update attacker stats on redis
     attacker = JSON.stringify(attacker);
@@ -156,7 +156,7 @@ exports.handleStabZombie = function (nickname, zombie, socket) {
     var attacker = JSON.parse(reply);
 
     // if basic attack conditions are not met, stop the attack
-    if (isAttackerReady(attacker, socket) === false) {
+    if (isAttackerReady(attacker, CHATTER_STAB_COST, socket) === false) {
       return;
     }
 
@@ -167,7 +167,7 @@ exports.handleStabZombie = function (nickname, zombie, socket) {
     }
 
     // reduce stamina of attacker
-    attacker.stamina = 0;
+    attacker.stamina = attacker.stamina - CHATTER_STAB_COST;
 
     // update attacker stats on redis
     attacker = JSON.stringify(attacker);
