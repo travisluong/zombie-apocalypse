@@ -1,3 +1,36 @@
+// is attacker ready?
+var isAttackerReady = function (attacker, socket) {
+
+    // check if attacker is alive
+    if (attacker.alive === false) {
+      socket.emit('messages', 'You are dead!');
+      return false;
+    }
+
+    // check if enough stamina
+    if (attacker.stamina < 100) {
+      socket.emit('messages', 'You are out of stamina!');
+      return false;
+    }
+
+    // return true if conditions not met
+    return true;
+}
+
+// does attacker have enough ammo?
+var isEnoughAmmo = function (attacker, socket) {
+  // reduce ammo of attacker
+  attacker.ammo = attacker.ammo - 1;
+
+  // check if attacker has enough mana
+  if (attacker.ammo < 0) {
+    socket.emit('messages', "You are out of ammo!");
+    return false;
+  }
+
+  return true;
+}
+
 // respawn timer
 exports.setRespawnTimer = function (chatter_data) {
   setTimeout(function () {
@@ -11,19 +44,13 @@ exports.setRespawnTimer = function (chatter_data) {
 }
 
 // parameters: name of attacker and attacked
-exports.handleAttack = function (nickname, attacked, socket) {
+exports.handleAttackChatter = function (nickname, attacked, socket) {
 
   redis.hget("chatters", nickname, function (err, reply) {
     var attacker = JSON.parse(reply);
-    // first, check if chatter is alive
-    if (attacker.alive === false) {
-      socket.emit('messages', 'You are dead!');
-      return;
-    }
 
-    // check if enough stamina
-    if (attacker.stamina < 100) {
-      socket.emit('messages', 'You are out of stamina!');
+    // if basic attack conditions are not met, stop the attack
+    if (isAttackerReady(attacker, socket) === false) {
       return;
     }
 
@@ -34,12 +61,7 @@ exports.handleAttack = function (nickname, attacked, socket) {
         return;
       }
 
-      // reduce ammo of attacker
-      attacker.ammo = attacker.ammo - 1;
-
-      // check if attacker has enough mana
-      if (attacker.ammo < 0) {
-        socket.emit('messages', "You are out of ammo!");
+      if (isEnoughAmmo(attacker, socket) === false) {
         return;
       }
 
@@ -89,30 +111,19 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
   redis.hget('chatters', nickname, function (err, reply) {
     var attacker = JSON.parse(reply);
 
-    // check if attacker is alive
-    if (attacker.alive === false) {
-      socket.emit('messages', 'You are dead!');
-      return;
-    }
-
-    // check if enough stamina
-    if (attacker.stamina < 100) {
-      socket.emit('messages', 'You are out of stamina!');
+    // if basic attack conditions are not met, stop the attack
+    if (isAttackerReady(attacker, socket) === false) {
       return;
     }
 
     // check if zombie exists
     if (zombies[zombie] === undefined) {
-      socket.emit('messages', 'What zombie?')
+      socket.emit('messages', 'What zombie? Are you mad?');
       return;
     }
 
-    // reduce ammo of attacker
-    attacker.ammo = attacker.ammo - 1;
-
     // check if attacker has enough ammo
-    if (attacker.ammo < 0) {
-      socket.emit('messages', "You are out of ammo!");
+    if (isEnoughAmmo(attacker, socket) === false) {
       return;
     }
 
@@ -130,6 +141,45 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
     // broadcast attack to all
     io.sockets.emit("messages", nickname +
       " shoots zombie " + zombie + " for " + damage + " damage!");
+
+    // check if killed
+    if (zombies[zombie].hp < 1) {
+      io.sockets.emit('messages', nickname + ' killed zombie ' +
+        zombie + '!' );
+      delete zombies[zombie];
+    }
+  })
+}
+
+exports.handleStabZombie = function (nickname, zombie, socket) {
+  redis.hget('chatters', nickname, function (err, reply) {
+    var attacker = JSON.parse(reply);
+
+    // if basic attack conditions are not met, stop the attack
+    if (isAttackerReady(attacker, socket) === false) {
+      return;
+    }
+
+    // check if zombie exists
+    if (zombies[zombie] === undefined) {
+      socket.emit('messages', 'What zombie?')
+      return;
+    }
+
+    // reduce stamina of attacker
+    attacker.stamina = 0;
+
+    // update attacker stats on redis
+    attacker = JSON.stringify(attacker);
+    redis.hset("chatters", nickname, attacker);
+
+    // deal damage
+    var damage = Math.round(Math.random() * CHATTER_STAB_DAMAGE);
+    zombies[zombie].hp = zombies[zombie].hp - damage;
+
+    // broadcast attack to all
+    io.sockets.emit("messages", nickname +
+      " stabs zombie " + zombie + " for " + damage + " damage!");
 
     // check if killed
     if (zombies[zombie].hp < 1) {

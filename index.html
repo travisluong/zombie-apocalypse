@@ -79,7 +79,7 @@ var updateZombies = function (data) {
   for (zombie_object in data) {
     zombie = data[zombie_object];
     $('#zombies').append('<div id="' + zombie.id + '">' +
-      '<div>zombie ' + zombie.id + '</div><span class="hp">' +
+      '<div>Zombie ' + zombie.id + '</div><span class="hp">' +
       zombie.hp  + 'hp</span></div>');
   }
 }

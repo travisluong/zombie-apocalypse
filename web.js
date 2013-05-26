@@ -19,7 +19,8 @@ global.CHATTER_RESPAWN_RATE = 30000;
 global.CHATTER_HP = 100;
 global.CHATTER_AMMO = 12;
 global.CHATTER_STAMINA = 100;
-global.CHATTER_ATTACK_DAMAGE = 100;
+global.CHATTER_ATTACK_DAMAGE = 200;
+global.CHATTER_STAB_DAMAGE = 100;
 global.HP_REGEN_RATE = 1;
 global.AMMO_REGEN_RATE = 0;
 global.STAMINA_REGEN_RATE = 25;
@@ -115,10 +116,13 @@ io.sockets.on('connection', function (socket) {
 
       if (split_words[0] === 'kill') {
         var attacked = split_words[1];
-        human_actions.handleAttack(nickname, attacked, socket);
+        human_actions.handleAttackChatter(nickname, attacked, socket);
       } else if (split_words[0] === 'shoot') {
         var zombie = split_words[1];
         human_actions.handleAttackZombie(nickname, zombie, socket);
+      } else if (split_words[0] == 'stab') {
+        var zombie = split_words[1];
+        human_actions.handleStabZombie(nickname, zombie, socket);
       } else {
         var message = nickname + ": " + data;
         socket.broadcast.emit("messages", message);
