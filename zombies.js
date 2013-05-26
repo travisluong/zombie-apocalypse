@@ -23,6 +23,11 @@ var zombieAttack = function (zombie, nickname) {
   redis.hget('chatters', nickname, function (err, reply) {
     var victim = JSON.parse(reply);
 
+    // only attack if zombie is still alive
+    if (zombies[zombie] === undefined) {
+      return;
+    }
+
     // deal damage
     var damage = Math.round(Math.random() * ZOMBIE_ATTACK_DAMAGE);
     victim.hp = victim.hp - damage;
