@@ -32,14 +32,31 @@ var isEnoughAmmo = function (attacker, socket) {
 }
 
 // respawn timer
-exports.setRespawnTimer = function (chatter_data) {
+exports.setRespawnTimer = function (nickname) {
   setTimeout(function () {
-    chatter_data.hp = CHATTER_HP;
-    chatter_data.ammo = CHATTER_AMMO;
-    chatter_data.alive = true;
-    var chatter_json = JSON.stringify(chatter_data);
-    redis.hset('chatters', chatter_data.nickname, chatter_json);
-    io.sockets.emit('messages', chatter_data.nickname + ' has been resurrected!');
+    redis.hget('chatters', nickname, function (err, reply) {
+      // return if no exist
+      if (reply === undefined) {
+        return;
+      }
+
+      chatter_data = JSON.parse(reply);
+
+      // return if alive
+      if (chatter_data.alive === true) {
+        return;
+      }
+
+      // resurrect! and reset score...
+      chatter_data.hp = CHATTER_HP;
+      chatter_data.ammo = CHATTER_AMMO;
+      chatter_data.score = 0;
+      chatter_data.alive = true;
+      chatter_data.first_aid_kit = CHATTER_FIRST_AID_KIT;
+      var chatter_json = JSON.stringify(chatter_data);
+      redis.hset('chatters', chatter_data.nickname, chatter_json);
+      io.sockets.emit('messages', chatter_data.nickname + ' has been resurrected!');
+    });
   }, CHATTER_RESPAWN_RATE);
 }
 
@@ -94,7 +111,7 @@ exports.handleAttackChatter = function (nickname, attacked, socket) {
           io.sockets.emit('messages', nickname + ' killed ' +
             attacked_chatter.nickname + '!' );
           attacked_chatter.alive = false;
-          human_actions.setRespawnTimer(attacked_chatter);
+          human_actions.setRespawnTimer(attacked_chatter.nickname);
         }
 
         // update attacked_chatter to redis
