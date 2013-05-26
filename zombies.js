@@ -34,7 +34,7 @@ var zombieAttack = function (zombie, nickname) {
       io.sockets.emit('messages', message);
 
       if (victim.hp < 1) {
-        var message = 'zombie ' + zombie + ' has killed ' +
+        var message = 'zombie ' + zombie + ' killed ' +
           nickname + '!';
         io.sockets.emit('messages', message);
         victim.alive = false;

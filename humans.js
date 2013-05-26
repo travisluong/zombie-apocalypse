@@ -21,6 +21,12 @@ exports.handleAttack = function (nickname, attacked, socket) {
       return;
     }
 
+    // check if enough stamina
+    if (attacker.stamina < 100) {
+      socket.emit('messages', 'You are out of stamina!');
+      return;
+    }
+
     // check if chatter exists
     redis.hexists('chatters', attacked, function (err, reply) {
       if (reply === 0) {
@@ -36,6 +42,8 @@ exports.handleAttack = function (nickname, attacked, socket) {
         socket.emit('messages', "You are out of ammo!");
         return;
       }
+
+      attacker.stamina = 0;
 
       // update attacker stats on redis
       attacker = JSON.stringify(attacker);
@@ -57,11 +65,11 @@ exports.handleAttack = function (nickname, attacked, socket) {
 
         // broadcast attack to all
         io.sockets.emit("messages", nickname +
-          " attacked " + attacked + " for " + damage + " damage!");
+          " shoots " + attacked + " for " + damage + " damage!");
 
         // check if killed
         if (attacked_chatter.hp < 1) {
-          io.sockets.emit('messages', nickname + ' has killed ' +
+          io.sockets.emit('messages', nickname + ' killed ' +
             attacked_chatter.nickname + '!' );
           attacked_chatter.alive = false;
           human_actions.setRespawnTimer(attacked_chatter);
@@ -121,11 +129,11 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
 
     // broadcast attack to all
     io.sockets.emit("messages", nickname +
-      " attacked zombie " + zombie + " for " + damage + " damage!");
+      " shoots zombie " + zombie + " for " + damage + " damage!");
 
     // check if killed
     if (zombies[zombie].hp < 1) {
-      io.sockets.emit('messages', nickname + ' has killed zombie ' +
+      io.sockets.emit('messages', nickname + ' killed zombie ' +
         zombie + '!' );
       delete zombies[zombie];
     }
