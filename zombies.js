@@ -20,41 +20,53 @@ setInterval(function () {
 }, 2000);
 
 var zombieAttack = function (zombie, nickname) {
-  redis.hget('chatters', nickname, function (err, reply) {
-    var victim = JSON.parse(reply);
 
-    // only attack if zombie is still alive
-    if (zombies[zombie] === undefined) {
-      return;
+  // check first if chatter exists
+  redis.hexists('chatters', nickname, function (err, exists) {
+    if (exists) {
+      confirmZombieAttack();
     }
-
-    // deal damage
-    var damage = Math.round(Math.random() * ZOMBIE_ATTACK_DAMAGE);
-    victim.hp = victim.hp - damage;
-
-    if (victim.alive) {
-      var message = 'zombie ' + zombie + ' bites ' +
-        nickname + ' for ' + damage + ' damage!';
-
-      io.sockets.emit('messages', message);
-
-      if (victim.hp < 1) {
-        var message = 'zombie ' + zombie + ' killed ' +
-          nickname + '!';
-        io.sockets.emit('messages', message);
-        victim.alive = false;
-        human_actions.setRespawnTimer(victim);
-      }
-    } else {
-      var message = 'zombie ' + zombie +
-      ' is feasting on the corpse of ' + nickname + '!';
-      io.sockets.emit('messages', message);
-    }
-
-    // save victim to redis
-    new_victim_json = JSON.stringify(victim);
-    redis.hset('chatters', nickname, new_victim_json);
   });
+
+  // was too deeply nested, moved this out to its own function
+  var confirmZombieAttack = function () {
+    redis.hget('chatters', nickname, function (err, reply) {
+      var victim = JSON.parse(reply);
+
+      // only attack if zombie is still alive
+      if (zombies[zombie] === undefined) {
+        return;
+      }
+
+      // deal damage
+      var damage = Math.round(Math.random() * ZOMBIE_ATTACK_DAMAGE);
+      victim.hp = victim.hp - damage;
+
+      if (victim.alive) {
+        var message = 'zombie ' + zombie + ' bites ' +
+          nickname + ' for ' + damage + ' damage!';
+
+        io.sockets.emit('messages', message);
+
+        if (victim.hp < 1) {
+          var message = 'zombie ' + zombie + ' killed ' +
+            nickname + '!';
+          io.sockets.emit('messages', message);
+          victim.alive = false;
+          human_actions.setRespawnTimer(victim);
+        }
+      } else {
+        var message = 'zombie ' + zombie +
+        ' is feasting on the corpse of ' + nickname + '!';
+        io.sockets.emit('messages', message);
+      }
+
+      // save victim to redis
+      new_victim_json = JSON.stringify(victim);
+      redis.hset('chatters', nickname, new_victim_json);
+    });
+  }
+
 }
 
 // set zombie attack interval

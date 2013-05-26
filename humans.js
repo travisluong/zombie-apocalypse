@@ -1,14 +1,14 @@
-// is attacker ready?
-var isAttackerReady = function (attacker, stamina_cost, socket) {
+// is chatter ready?
+var isChatterReady = function (chatter, stamina_cost, socket) {
 
-    // check if attacker is alive
-    if (attacker.alive === false) {
+    // check if chatter is alive
+    if (chatter.alive === false) {
       socket.emit('messages', 'You are dead!');
       return false;
     }
 
     // check if enough stamina
-    if (attacker.stamina < stamina_cost) {
+    if (chatter.stamina < stamina_cost) {
       socket.emit('messages', 'You do not have enough stamina!');
       return false;
     }
@@ -50,7 +50,7 @@ exports.handleAttackChatter = function (nickname, attacked, socket) {
     var attacker = JSON.parse(reply);
 
     // if basic attack conditions are not met, stop the attack
-    if (isAttackerReady(attacker, CHATTER_ATTACK_COST, socket) === false) {
+    if (isChatterReady(attacker, CHATTER_ATTACK_COST, socket) === false) {
       return;
     }
 
@@ -131,7 +131,7 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
     var attacker = JSON.parse(reply);
 
     // if basic attack conditions are not met, stop the attack
-    if (isAttackerReady(attacker, CHATTER_ATTACK_COST, socket) === false) {
+    if (isChatterReady(attacker, CHATTER_ATTACK_COST, socket) === false) {
       return;
     }
 
@@ -175,7 +175,7 @@ exports.handleStabZombie = function (nickname, zombie, socket) {
     var attacker = JSON.parse(reply);
 
     // if basic attack conditions are not met, stop the attack
-    if (isAttackerReady(attacker, CHATTER_STAB_COST, socket) === false) {
+    if (isChatterReady(attacker, CHATTER_STAB_COST, socket) === false) {
       return;
     }
 
@@ -208,6 +208,75 @@ exports.handleStabZombie = function (nickname, zombie, socket) {
       delete zombies[zombie];
     }
   })
+}
+
+// handle first aid kits
+exports.handleHeal = function (nickname, target, socket) {
+  redis.hget('chatters', nickname, function (err, reply) {
+    var healer = JSON.parse(reply);
+
+    // check if chatter ready
+    if (isChatterReady(healer, CHATTER_HEAL_COST, socket) === false) {
+      return;
+    }
+
+    // check if chatter has enough first aid kits
+    if (healer.first_aid_kit < 1) {
+      socket.emit('messages', 'You are out of first aid kits!');
+      return;
+    }
+
+    // heal self if no target given, or if target is self
+    if (target === undefined || nickname === target) {
+      healer.hp = 100;
+      healer.first_aid_kit = healer.first_aid_kit - 1;
+      healer.stamina = healer.stamina - CHATTER_HEAL_COST;
+
+      // emit message
+      io.sockets.emit('messages', nickname + ' healed ' + nickname +
+        ' with a first aid kit!');
+
+      // save to redis
+      new_healer_json = JSON.stringify(healer);
+      redis.hset('chatters', nickname, new_healer_json);
+      return;
+    }
+
+    // check if target is legit
+    redis.hexists('chatters', target, function (err, reply) {
+      // if target is legit, heal! or resurrect if dead...
+
+      // if target doesnt exist
+      if (reply === false) {
+        socket.emit('messages', target + ' does not exist!');
+      }
+
+      if (reply) {
+        redis.hget('chatters', target, function (err, chatter) {
+          chatter_object = JSON.parse(chatter);
+          healer.stamina = healer.stamina - CHATTER_HEAL_COST;
+
+          if (chatter_object.alive === true) {
+            chatter_object.hp = 100;
+            io.sockets.emit('messages', nickname + ' healed ' +
+              target + ' with a first aid kit!');
+          } else {
+            chatter_object.hp = 100;
+            chatter_object.alive = true;
+            io.sockets.emit('messages', nickname + ' resurrected ' +
+              target + ' with a first aid kit!');
+          }
+          new_chatter_json = JSON.stringify(chatter_object);
+          redis.hset('chatters', target, new_chatter_json);
+          healer.first_aid_kit = healer.first_aid_kit - 1;
+
+          // save to redis
+          new_healer_json = JSON.stringify(healer);
+          redis.hset('chatters', nickname, new_healer_json);
+        });
+      }
+    });
+  });
 }
 
 // set interval to update chatter stats

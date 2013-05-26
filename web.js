@@ -19,10 +19,12 @@ global.CHATTER_RESPAWN_RATE = 30000;
 global.CHATTER_HP = 100;
 global.CHATTER_AMMO = 12;
 global.CHATTER_STAMINA = 100;
+global.CHATTER_FIRST_AID_KIT = 3;
 global.CHATTER_ATTACK_DAMAGE = 200;
 global.CHATTER_STAB_DAMAGE = 50;
 global.CHATTER_ATTACK_COST = 25;
 global.CHATTER_STAB_COST = 50;
+global.CHATTER_HEAL_COST = 100;
 global.HP_REGEN_RATE = 1;
 global.AMMO_REGEN_RATE = 0;
 global.STAMINA_REGEN_RATE = 25;
@@ -82,7 +84,8 @@ io.sockets.on('connection', function (socket) {
       alive: true,
       hp: CHATTER_HP,
       ammo: CHATTER_AMMO,
-      stamina: CHATTER_STAMINA
+      stamina: CHATTER_STAMINA,
+      first_aid_kit: CHATTER_FIRST_AID_KIT
     }
 
     // save chatter to redis
@@ -122,9 +125,12 @@ io.sockets.on('connection', function (socket) {
       } else if (split_words[0] === 'shoot') {
         var zombie = split_words[1];
         human_actions.handleAttackZombie(nickname, zombie, socket);
-      } else if (split_words[0] == 'stab') {
+      } else if (split_words[0] === 'stab') {
         var zombie = split_words[1];
         human_actions.handleStabZombie(nickname, zombie, socket);
+      } else if (split_words[0] === 'heal') {
+        var target = split_words[1];
+        human_actions.handleHeal(nickname, target, socket);
       } else {
         var message = nickname + ": " + data;
         socket.broadcast.emit("messages", message);
