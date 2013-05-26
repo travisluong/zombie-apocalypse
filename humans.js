@@ -64,7 +64,7 @@ exports.handleAttack = function (nickname, attacked, socket) {
           io.sockets.emit('messages', nickname + ' has killed ' +
             attacked_chatter.nickname + '!' );
           attacked_chatter.alive = false;
-          setRespawnTimer(attacked_chatter);
+          human_actions.setRespawnTimer(attacked_chatter);
         }
 
         // update attacked_chatter to redis

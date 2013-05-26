@@ -13,7 +13,7 @@
 </head>
 <body>
   <div id="header">
-    <h1>Zombie Apocalypse</h1>
+    <h1><span>Zombie</span> Apocalypse</h1>
   </div>
   <div id="container">
     <div id="left">
@@ -100,7 +100,7 @@ $('#chat_form').submit(function(e) {
   e.preventDefault();
   var message = $('#chat_input').val();
   socket.emit('messages', message);
-  $('#chat_input').val("");
+  $('#chat_input').select();
 });
 </script>
 </html>
