@@ -13,7 +13,7 @@ h1 {
   color: #f76631;
 }
 
-.mp {
+.ammo {
   color: #32ffe3;
 }
 
@@ -29,6 +29,7 @@ h1 {
 
 #header span {
   color: #7A963B;
+  font-family: Creepster;
 }
 
 #container {
@@ -68,6 +69,7 @@ h1 {
   float: left;
   background: #000;
   color: #fff;
+  min-height: 500px;
 }
 
 #middle {
@@ -81,6 +83,7 @@ h1 {
   float: left;
   background: #000;
   color: #fff;
+  min-height: 500px;
 }
 
 #zombies {

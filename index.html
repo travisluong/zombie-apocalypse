@@ -6,7 +6,7 @@
   <meta name="keywords" content="Node.js MUD">
   <title>Node.js MUD</title>
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
-  <link href='http://fonts.googleapis.com/css?family=Butcherman' rel='stylesheet' type='text/css'>
+  <link href='http://fonts.googleapis.com/css?family=Butcherman|Creepster' rel='stylesheet' type='text/css'>
   <link rel="stylesheet" href="style.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
@@ -50,19 +50,19 @@ var removeChatter = function (data) {
 }
 
 var updateChatter = function (data) {
-  var hp_class, mp_class;
+  var hp_class, ammo_class;
   if (data.alive) {
     hp_class = "hp";
-    mp_class = "mp";
+    ammo_class = "ammo";
   } else {
     hp_class = "dead";
-    mp_class = "dead";
+    ammo_class = "dead";
   }
 
   $('#chatters ' + "#" + data.socket_id).html('<div>' +
     data.nickname + '</div><div><span class="' + hp_class +'">' +
-    data.hp + 'hp</span> <span class="' + mp_class + '">' +
-    data.mp + "mp</span>");
+    data.hp + 'hp</span> <span class="' + ammo_class + '">' +
+    data.ammo + "ammo</span>");
 }
 
 var updateZombies = function (data) {

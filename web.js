@@ -16,9 +16,9 @@ global.ZOMBIES_PER_CHATTER = 5;
 global.ZOMBIE_HP = 100;
 global.CHATTER_RESPAWN_RATE = 30000;
 global.CHATTER_HP = 100;
-global.CHATTER_MP = 100;
+global.CHATTER_AMMO = 100;
 global.HP_REGEN_RATE = 4;
-global.MP_REGEN_RATE = 4;
+global.AMMO_REGEN_RATE = 0;
 global.REGEN_INTERVAL = 4000;
 
 // custom global modules
@@ -74,7 +74,7 @@ io.sockets.on('connection', function (socket) {
       nickname: nickname,
       alive: true,
       hp: CHATTER_HP,
-      mp: CHATTER_MP
+      ammo: CHATTER_AMMO
     }
 
     // save chatter to redis

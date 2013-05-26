@@ -2,7 +2,7 @@
 exports.setRespawnTimer = function (chatter_data) {
   setTimeout(function () {
     chatter_data.hp = CHATTER_HP;
-    chatter_data.mp = CHATTER_MP;
+    chatter_data.ammo = CHATTER_AMMO;
     chatter_data.alive = true;
     var chatter_json = JSON.stringify(chatter_data);
     redis.hset('chatters', chatter_data.nickname, chatter_json);
@@ -28,11 +28,11 @@ exports.handleAttack = function (nickname, attacked, socket) {
         return;
       }
 
-      // reduce mp of attacker
-      attacker.mp = attacker.mp - 10;
+      // reduce ammo of attacker
+      attacker.ammo = attacker.ammo - 1;
 
       // check if attacker has enough mana
-      if (attacker.mp < 0) {
+      if (attacker.ammo < 0) {
         socket.emit('messages', "You don't have enough mana!");
         return;
       }
@@ -93,12 +93,12 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
       return;
     }
 
-    // reduce mp of attacker
-    attacker.mp = attacker.mp - 10;
+    // reduce ammo of attacker
+    attacker.ammo = attacker.ammo - 1;
 
     // check if attacker has enough mana
-    if (attacker.mp < 0) {
-      socket.emit('messages', "You don't have enough mana!");
+    if (attacker.ammo < 0) {
+      socket.emit('messages', "You are out of ammo!");
       return;
     }
 
@@ -152,11 +152,11 @@ setInterval(function () {
             }
           }
 
-          if (chatter_data.mp < 100) {
-            chatter_data.mp = chatter_data.mp + MP_REGEN_RATE;
+          if (chatter_data.ammo < 100) {
+            chatter_data.ammo = chatter_data.ammo + AMMO_REGEN_RATE;
             chatter_updated = true;
-            if (chatter_data.mp > 100) {
-              chatter_data.mp = 100;
+            if (chatter_data.ammo > 100) {
+              chatter_data.ammo = 100;
             }
           }
         }
