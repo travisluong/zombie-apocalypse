@@ -115,12 +115,9 @@ h1 {
   padding: 5px;
 }
 
-#chatters>div, #zombies>div {
-  margin: 10px 0;
-}
-
 #chatters span {
   display: block;
   float: left;
   width: 33%;
+  margin-bottom: 10px;
 }

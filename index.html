@@ -34,15 +34,74 @@
   </div>
 </body>
 <script>
+$(document).ready(function () {
+  init();
+});
+
+var init = function () {
+  var socket = io.connect('/', {'sync disconnect on unload' : true});
+
+  socket.on('connect', function(data) {
+    bindLoginForm(socket);
+    $('#chatters, #zombies').empty();
+    insertMessage("Server connected.");
+    insertMessage('Please enter your nickname...');
+  });
+
+  socket.on('join confirm', function (confirmed) {
+    if (confirmed !== true) {
+      insertMessage('Unable to join room');
+    } else {
+      insertMessage('Welcome to Zombie Apocalypse.');
+      initChat(socket);
+    }
+  });
+
+  socket.on('validation error', function (err) {
+    insertMessage(err);
+  });
+}
+
+var bindLoginForm = function (socket) {
+  $('#chat_form').unbind('submit');
+  $('#chat_form').submit(function(e) {
+    e.preventDefault();
+    var nickname = $('#chat_input').val();
+    $('#chat_input').val('');
+    socket.emit('join', nickname);
+  });
+}
+
+var bindChatForm = function (socket) {
+  $('#chat_form').unbind('submit');
+  $('#chat_form').submit(function(e) {
+    e.preventDefault();
+    var message = $('#chat_input').val();
+    socket.emit('messages', message);
+    $('#chat_input').select();
+  });
+}
+
 var insertMessage = function (data) {
   $('#chat_window').append('<div>' + data + '</div>');
   $('#chat_window').scrollTop($('#chat_window')[0].scrollHeight);
 }
 
+var initChat = function (socket) {
+  socket.on('messages', function(data) {
+    insertMessage(data);
+  })
+
+  socket.on('update chatters', updateChatters);
+
+  socket.on('update zombies', updateZombies);
+
+  bindChatForm(socket);
+}
+
 var updateZombies = function (data) {
   $('#zombies').empty();
 
-  // data is a hash of zombies
   for (zombie_object in data) {
     zombie = data[zombie_object];
     $('#zombies').append('<div id="' + zombie.id + '">' +
@@ -86,59 +145,5 @@ var updateChatters = function (data) {
   }
 }
 
-var validationError = function (data) {
-  var nickname = prompt(data);
-  if (clientSideValidate(nickname) === true) {
-    socket.emit('join', nickname);
-  }
-}
-
-var clientSideValidate = function (nickname) {
-  if (nickname === null || nickname === '') {
-    insertMessage('Name cannot be empty.');
-    return false;
-  }
-
-  if (nickname.indexOf(' ') >= 0) {
-    insertMessage('Name cannot contain spaces.');
-    return false;
-  }
-
-  return true;
-}
-
-var initChat = function (socket) {
-  socket.on('messages', function(data) {
-    insertMessage(data);
-  })
-
-  socket.on('update chatters', updateChatters);
-
-  socket.on('update zombies', updateZombies);
-
-  $('#chat_form').submit(function(e) {
-    e.preventDefault();
-    var message = $('#chat_input').val();
-    socket.emit('messages', message);
-    $('#chat_input').select();
-  });
-}
-
-var nickname = prompt("What is your nickname?");
-
-if (clientSideValidate(nickname) === true) {
-  var socket = io.connect('/', {'sync disconnect on unload' : true});
-
-  socket.on('connect', function(data) {
-    insertMessage("Server connected...");
-    $('#chatters').empty();
-    socket.emit('join', nickname);
-  });
-
-  socket.on('validation error', validationError);
-
-  initChat(socket);
-
-}
 </script>
 </html>

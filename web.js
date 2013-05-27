@@ -83,7 +83,7 @@ var validateNickname = function (nickname, socket) {
   }
 
   redis.hexists('chatters', nickname, function (err, reply) {
-    if (reply) {
+    if (reply === 1) {
       socket.emit('validation error', 'That name is already taken.');
       return false;
     } else {
@@ -112,26 +112,42 @@ io.sockets.on('connection', function (socket) {
   // on join
   socket.on('join', function (nickname) {
 
-    if(validateNickname(nickname, socket) === false) {
+
+    if (nickname === null || nickname === '') {
+      socket.emit('validation error', 'Name cannot be empty.');
       return;
     }
 
-    // set nickname for this client
-    socket.set('nickname', nickname);
+    if (nickname.indexOf(' ') >= 0) {
+        socket.emit('validation error', 'Name cannot contain spaces.');
+        return;
+    }
 
-    // initialize chatter data
-    var chatter_data = CHATTER_MODEL;
+    redis.hexists('chatters', nickname, function (err, reply) {
+      if (reply === 1) {
+        socket.emit('validation error', 'That name is already taken.');
+        return;
+      }
 
-    chatter_data.nickname = nickname;
-    chatter_data.socket_id = socket.id;
+      socket.emit('join confirm', true);
 
-    // save chatter to redis
-    var chatter_json = JSON.stringify(chatter_data);
-    redis.hset("chatters", nickname, chatter_json);
+      // set nickname for this client
+      socket.set('nickname', nickname);
 
-    // broadcast chatter has joined room
-    var message = nickname + " has joined the room.";
-    io.sockets.emit("messages", message);
+      // initialize chatter data
+      var chatter_data = CHATTER_MODEL;
+
+      chatter_data.nickname = nickname;
+      chatter_data.socket_id = socket.id;
+
+      // save chatter to redis
+      var chatter_json = JSON.stringify(chatter_data);
+      redis.hset("chatters", nickname, chatter_json);
+
+      // broadcast chatter has joined room
+      var message = nickname + " has joined the room.";
+      io.sockets.emit("messages", message);
+    });
   });
 
   // on messages
