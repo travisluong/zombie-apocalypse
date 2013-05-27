@@ -67,11 +67,11 @@ var updateChatter = function (data) {
 
   $('#chatters ' + "#" + data.socket_id).html(
     '<div>' + data.nickname + '</div><div>' +
-    '<span class="' + hp_class +'">' + data.hp + 'H</span> ' +
-    '<span class="' + ammo_class + '">' + data.ammo + 'A</span> ' +
-    '<span class="' + stamina_class + '">' + data.stamina + 'S</span> ' +
-    '<span class="' + first_aid_class + '">' + data.first_aid_kit + 'F</span> ' +
-    '<span class="' + score_class + '">' + data.score + 'Z</span>' +
+    '<div class="stat_bar ' + hp_class +'" style="width:' + data.hp + '%;">' + '</div> ' +
+    '<div class="stat_bar ' + stamina_class + '" style="width:' + data.stamina + '%;">' + '</div> ' +
+    '<span class="' + ammo_class + '">' + data.ammo + ' ammo</span> ' +
+    '<span class="' + first_aid_class + '">' + data.first_aid_kit + ' kits</span> ' +
+    '<span class="' + score_class + '">' + data.score + ' kills</span>' +
     '</div>' );
 }
 
@@ -82,8 +82,7 @@ var updateZombies = function (data) {
   for (zombie_object in data) {
     zombie = data[zombie_object];
     $('#zombies').append('<div id="' + zombie.id + '">' +
-      '<div>Zombie ' + zombie.id + '</div><span class="hp">' +
-      zombie.hp  + 'hp</span></div>');
+      '<div>Zombie ' + zombie.id + '</div><div class="stat_bar zombie_hp" style="width:' + zombie.hp + '%;">' + '</div></div>');
   }
 }
 

@@ -9,8 +9,17 @@ h1 {
   font-size: 30px;
 }
 
+.stat_bar {
+  height: 10px;
+  margin: 2px 0;
+}
+
+.zombie_hp {
+  background-color: #7A963B;
+}
+
 .hp {
-  color: #f76631;
+  background-color: #f76631;
 }
 
 .ammo {
@@ -18,7 +27,7 @@ h1 {
 }
 
 .stamina {
-  color: #eadd4d;
+  background-color: #eadd4d;
 }
 
 .first_aid {
@@ -65,7 +74,7 @@ h1 {
 }
 
 #chat_input {
-  width: 98%;
+  width: 580px;
   height: 30px;
   float: left;
   background: #000;
@@ -77,7 +86,7 @@ h1 {
 }
 
 #left {
-  width: 200px;
+  width: 220px;
   float: left;
   background: #000;
   color: #fff;
@@ -85,7 +94,7 @@ h1 {
 }
 
 #middle {
-  width: 600px;
+  width: 580px;
   float: left;
   margin: 0 20px;
 }
@@ -108,4 +117,10 @@ h1 {
 
 #chatters>div, #zombies>div {
   margin: 10px 0;
+}
+
+#chatters span {
+  display: block;
+  float: left;
+  width: 33%;
 }
