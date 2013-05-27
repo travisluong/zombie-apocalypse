@@ -16,7 +16,7 @@ global.ZOMBIE_ATTACK_RATE = 10000;
 global.ZOMBIE_ATTACK_DAMAGE = 20;
 global.ZOMBIES_PER_CHATTER = 20;
 global.ZOMBIE_HP = 100;
-global.CHATTER_RESPAWN_RATE = 30000;
+global.CHATTER_RESPAWN_RATE = -1;
 global.CHATTER_HP = 100;
 global.CHATTER_AMMO = 12;
 global.CHATTER_STAMINA = 100;
@@ -36,6 +36,17 @@ global.FIRST_AID_DROP_RATE = 20;
 // custom global modules
 global.zombie_actions = require('./zombies.js');
 global.human_actions = require('./humans.js');
+
+var CHATTER_MODEL = {
+      socket_id: null,
+      nickname: null,
+      alive: true,
+      hp: CHATTER_HP,
+      ammo: CHATTER_AMMO,
+      stamina: CHATTER_STAMINA,
+      first_aid_kit: CHATTER_FIRST_AID_KIT,
+      score: 0
+    }
 
 // enable logging
 //app.use(express.logger());
@@ -81,16 +92,10 @@ io.sockets.on('connection', function (socket) {
     socket.set('nickname', nickname);
 
     // initialize chatter data
-    var chatter_data = {
-      socket_id: socket.id,
-      nickname: nickname,
-      alive: true,
-      hp: CHATTER_HP,
-      ammo: CHATTER_AMMO,
-      stamina: CHATTER_STAMINA,
-      first_aid_kit: CHATTER_FIRST_AID_KIT,
-      score: 0
-    }
+    var chatter_data = CHATTER_MODEL;
+
+    chatter_data.nickname = nickname;
+    chatter_data.socket_id = socket.id;
 
     // save chatter to redis
     var chatter_json = JSON.stringify(chatter_data);
@@ -144,3 +149,49 @@ io.sockets.on('connection', function (socket) {
   });
 });
 
+var restartGame = function () {
+  redis.hgetall('chatters', function (err, chatters) {
+    for (c in chatters) {
+      chatter_json = chatters[c];
+      chatter_data = JSON.parse(chatter_json);
+
+      new_chatter_data = CHATTER_MODEL;
+      new_chatter_data.nickname = chatter_data.nickname;
+      new_chatter_data.socket_id = chatter_data.socket_id;
+      chatter_json = JSON.stringify(new_chatter_data);
+      redis.hset('chatters', chatter_data.nickname, chatter_json);
+    }
+
+    zombies = {};
+    zombie_counter = 0;
+    zombie_wave = 0;
+    io.sockets.emit('messages', 'New game started...');
+  });
+}
+
+// loop through chatters and see if they are all dead
+// if all dead, restart game
+setInterval(function () {
+
+  // first check that there is someone connected
+  num_chatters = io.sockets.clients();
+  if (num_chatters < 1) {
+    return;
+  }
+
+  // if anyone is alive, return out of function
+  redis.hgetall('chatters', function (err, chatters) {
+    for (c in chatters) {
+      chatter_json = chatters[c];
+      chatter_data = JSON.parse(chatter_json);
+      if (chatter_data.alive) {
+        return;
+      }
+    }
+
+    // if all dead, restart game
+    io.sockets.emit('messages', 'All humans have been consumed. ' +
+      'New game starting in 10 seconds...');
+    setTimeout(restartGame, 10000);
+  });
+}, 15000);

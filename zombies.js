@@ -80,7 +80,6 @@ var zombieAttack = function (zombie, nickname) {
             nickname + '!';
           io.sockets.emit('messages', message);
           victim.alive = false;
-          human_actions.setRespawnTimer(nickname);
         }
       } else {
         var message = 'Zombie ' + zombie +
