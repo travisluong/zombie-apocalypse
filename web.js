@@ -20,7 +20,7 @@ global.CHATTER_HP = 100;
 global.CHATTER_AMMO = 12;
 global.CHATTER_STAMINA = 100;
 global.CHATTER_FIRST_AID_KIT = 3;
-global.CHATTER_ATTACK_DAMAGE = 200;
+global.CHATTER_ATTACK_DAMAGE = 100;
 global.CHATTER_STAB_DAMAGE = 50;
 global.CHATTER_ATTACK_COST = 25;
 global.CHATTER_STAB_COST = 50;
@@ -29,6 +29,8 @@ global.HP_REGEN_RATE = 1;
 global.AMMO_REGEN_RATE = 0;
 global.STAMINA_REGEN_RATE = 25;
 global.REGEN_INTERVAL = 2000;
+global.AMMO_DROP_RATE = 20;
+global.FIRST_AID_DROP_RATE = 20;
 
 // custom global modules
 global.zombie_actions = require('./zombies.js');

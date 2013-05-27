@@ -1,3 +1,21 @@
+// random reward returns a chatter object with random reward
+var randomReward = function (chatter_object, socket) {
+  var random_number = Math.round(Math.random() * 100);
+
+  if (random_number < AMMO_DROP_RATE) {
+    chatter_object.ammo = chatter_object.ammo + 12;
+    socket.emit('messages', 'You found ammo!');
+    socket.broadcast.emit('messages', chatter_object.nickname + ' found ammo!')
+  }
+  if (random_number < FIRST_AID_DROP_RATE) {
+    chatter_object.first_aid_kit = chatter_object.first_aid_kit + 1;
+    socket.emit('messages', 'You found a first aid kit!');
+    socket.broadcast.emit('messages', chatter_object.nickname + ' found a first aid kit!')
+  }
+
+  return chatter_object;
+}
+
 // is chatter ready?
 var isChatterReady = function (chatter, stamina_cost, socket) {
 
@@ -180,6 +198,7 @@ exports.handleAttackZombie = function (nickname, zombie, socket) {
         zombie + '!' );
       delete zombies[zombie];
       attacker.score = attacker.score + 1;
+      attacker = randomReward(attacker, socket);
     }
 
     // update attacker stats on redis
