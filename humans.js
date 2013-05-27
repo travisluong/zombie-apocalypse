@@ -318,15 +318,10 @@ exports.handleHeal = function (nickname, target, socket) {
 
 // set interval to update chatter stats
 setInterval(function () {
-  redis.hkeys('chatters', function (err, chatters) {
-    chatters.forEach(function (chatter_key) {
-      redis.hget('chatters', chatter_key, function (err, chatter_json) {
-        var chatter_data = JSON.parse(chatter_json);
-        io.sockets.emit('update chatter', chatter_data);
-      });
-    });
+  redis.hgetall('chatters', function (err, reply) {
+    io.sockets.emit('update chatters', reply);
   });
-}, 2000);
+}, 2000)
 
 // set interval to replenish mana, hp, and stamina
 setInterval(function () {

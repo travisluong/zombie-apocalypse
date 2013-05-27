@@ -69,6 +69,30 @@ io.configure(function () {
   io.set("polling duration", 10);
 });
 
+// check if contains spaces or exists in database
+var validateNickname = function (nickname, socket) {
+
+  if (nickname === null || nickname === '') {
+    socket.emit('validation error', 'Name cannot be empty.');
+    return false;
+  }
+
+  if (nickname.indexOf(' ') >= 0) {
+      socket.emit('validation error', 'Name cannot contain spaces.');
+      return false;
+  }
+
+  redis.hexists('chatters', nickname, function (err, reply) {
+    if (reply) {
+      socket.emit('validation error', 'That name is already taken.');
+      return false;
+    } else {
+      return true;
+    }
+  });
+
+}
+
 // on connection
 io.sockets.on('connection', function (socket) {
   console.log('Client connected...');
@@ -88,6 +112,10 @@ io.sockets.on('connection', function (socket) {
   // on join
   socket.on('join', function (nickname) {
 
+    if(validateNickname(nickname, socket) === false) {
+      return;
+    }
+
     // set nickname for this client
     socket.set('nickname', nickname);
 
@@ -101,25 +129,9 @@ io.sockets.on('connection', function (socket) {
     var chatter_json = JSON.stringify(chatter_data);
     redis.hset("chatters", nickname, chatter_json);
 
-    // emit current chatters to client
-    redis.hkeys('chatters', function (err, chatters) {
-
-      // loop through chatters hash map and display them on client
-      chatters.forEach(function (chatter_key) {
-        redis.hget('chatters', chatter_key, function (err, chatter_json) {
-          var chatter_data = JSON.parse(chatter_json);
-          socket.emit('add chatter', chatter_data);
-        });
-      });
-
-      // broadcast chatter has joined room
-      var message = nickname + " has joined the room.";
-      socket.broadcast.emit("messages", message);
-      socket.emit("messages", message);
-
-      // broadcast add chatter to other clients
-      socket.broadcast.emit('add chatter', chatter_data);
-    });
+    // broadcast chatter has joined room
+    var message = nickname + " has joined the room.";
+    io.sockets.emit("messages", message);
   });
 
   // on messages

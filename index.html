@@ -34,45 +34,9 @@
   </div>
 </body>
 <script>
-var socket = io.connect('/', {'sync disconnect on unload' : true});
-
 var insertMessage = function (data) {
   $('#chat_window').append('<div>' + data + '</div>');
   $('#chat_window').scrollTop($('#chat_window')[0].scrollHeight);
-}
-
-var insertChatter = function (data) {
-  $('#chatters').append('<div id="' + data.socket_id + '">' + data.nickname + '</div>');
-}
-
-var removeChatter = function (data) {
-  $('#chatters ' + '#' + data).remove();
-}
-
-var updateChatter = function (data) {
-  var hp_class, ammo_class, stamina_class, first_aid_class, score_class;
-  if (data.alive) {
-    hp_class = "hp";
-    ammo_class = "ammo";
-    stamina_class = "stamina";
-    first_aid_class = "first_aid";
-    score_class = "score";
-  } else {
-    hp_class = "dead";
-    ammo_class = "dead";
-    stamina_class = "dead";
-    first_aid_class = "dead";
-    score_class = "dead";
-  }
-
-  $('#chatters ' + "#" + data.socket_id).html(
-    '<div>' + data.nickname + '</div><div>' +
-    '<div class="stat_bar ' + hp_class +'" style="width:' + data.hp + '%;">' + '</div> ' +
-    '<div class="stat_bar ' + stamina_class + '" style="width:' + data.stamina + '%;">' + '</div> ' +
-    '<span class="' + ammo_class + '">' + data.ammo + ' ammo</span> ' +
-    '<span class="' + first_aid_class + '">' + data.first_aid_kit + ' kits</span> ' +
-    '<span class="' + score_class + '">' + data.score + ' kills</span>' +
-    '</div>' );
 }
 
 var updateZombies = function (data) {
@@ -86,30 +50,95 @@ var updateZombies = function (data) {
   }
 }
 
-socket.on('connect', function(data) {
-  insertMessage("Server connected...");
+var updateChatters = function (data) {
+  var hp_class, ammo_class, stamina_class, first_aid_class, score_class;
+
   $('#chatters').empty();
-  var nickname = prompt("What is your nickname?");
-  socket.emit('join', nickname);
-});
 
-socket.on('messages', function(data) {
-  insertMessage(data);
-})
+  for (key in data) {
 
-socket.on('add chatter', insertChatter);
+    chatter_json = data[key];
+    chatter_object = JSON.parse(chatter_json);
 
-socket.on('remove chatter', removeChatter);
+    if (chatter_object.alive) {
+      hp_class = "hp";
+      ammo_class = "ammo";
+      stamina_class = "stamina";
+      first_aid_class = "first_aid";
+      score_class = "score";
+    } else {
+      hp_class = "dead";
+      ammo_class = "dead";
+      stamina_class = "dead";
+      first_aid_class = "dead";
+      score_class = "dead";
+    }
 
-socket.on('update chatter', updateChatter);
+    updated_chatter = '<div>' + chatter_object.nickname + '</div><div>' +
+    '<div class="stat_bar ' + hp_class +'" style="width:' + chatter_object.hp + '%;">' + '</div> ' +
+    '<div class="stat_bar ' + stamina_class + '" style="width:' + chatter_object.stamina + '%;">' + '</div> ' +
+    '<span class="' + ammo_class + '">' + chatter_object.ammo + ' ammo</span> ' +
+    '<span class="' + first_aid_class + '">' + chatter_object.first_aid_kit + ' kits</span> ' +
+    '<span class="' + score_class + '">' + chatter_object.score + ' kills</span>' +
+    '</div>';
 
-socket.on('update zombies', updateZombies);
+    $('#chatters').append(updated_chatter);
+  }
+}
 
-$('#chat_form').submit(function(e) {
-  e.preventDefault();
-  var message = $('#chat_input').val();
-  socket.emit('messages', message);
-  $('#chat_input').select();
-});
+var validationError = function (data) {
+  var nickname = prompt(data);
+  if (clientSideValidate(nickname) === true) {
+    socket.emit('join', nickname);
+  }
+}
+
+var clientSideValidate = function (nickname) {
+  if (nickname === null || nickname === '') {
+    insertMessage('Name cannot be empty.');
+    return false;
+  }
+
+  if (nickname.indexOf(' ') >= 0) {
+    insertMessage('Name cannot contain spaces.');
+    return false;
+  }
+
+  return true;
+}
+
+var initChat = function (socket) {
+  socket.on('messages', function(data) {
+    insertMessage(data);
+  })
+
+  socket.on('update chatters', updateChatters);
+
+  socket.on('update zombies', updateZombies);
+
+  $('#chat_form').submit(function(e) {
+    e.preventDefault();
+    var message = $('#chat_input').val();
+    socket.emit('messages', message);
+    $('#chat_input').select();
+  });
+}
+
+var nickname = prompt("What is your nickname?");
+
+if (clientSideValidate(nickname) === true) {
+  var socket = io.connect('/', {'sync disconnect on unload' : true});
+
+  socket.on('connect', function(data) {
+    insertMessage("Server connected...");
+    $('#chatters').empty();
+    socket.emit('join', nickname);
+  });
+
+  socket.on('validation error', validationError);
+
+  initChat(socket);
+
+}
 </script>
 </html>
