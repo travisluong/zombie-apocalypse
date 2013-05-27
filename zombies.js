@@ -1,17 +1,44 @@
-// spawn zombies
+var spawnZombies = function () {
+  for (var i = 0; i <= zombie_wave; i++) {
+    zombie_counter = zombie_counter + 1;
+    zombie = {
+      id: zombie_counter,
+      hp: ZOMBIE_HP
+    }
+    zombies[zombie_counter] = zombie;
+  }
+
+  zombie_wave = zombie_wave + 1;
+
+  if (zombie_wave === 1) {
+    io.sockets.emit('messages', "A zombie entered the room!");
+  } else {
+    io.sockets.emit('messages', zombie_wave + ' Zombies entered the room!');
+  }
+}
+
+// set zombie interval
 setInterval(function () {
   var num_chatters = io.sockets.clients();
   num_zombies = Object.keys(zombies).length;
+
+  // check to make sure it doesn't go above the zombie limit
   if (num_zombies >= num_chatters.length * ZOMBIES_PER_CHATTER) {
     return;
   }
-  zombie_counter = zombie_counter + 1;
-  zombie = {
-    id: zombie_counter,
-    hp: ZOMBIE_HP
+
+  // check to make sure there are no more zombies before
+  // releasing the next wave
+  if (num_zombies > 0) {
+    return;
   }
-  zombies[zombie_counter] = zombie;
-  io.sockets.emit('messages', 'A zombie has entered the room!')
+
+  setTimeout(spawnZombies, 10000);
+
+  if (zombie_wave > 0) {
+    io.sockets.emit('messages', 'You survived wave ' + zombie_wave +
+      ' of zombies! Be prepared for the next horde...')
+  }
 }, ZOMBIE_SPAWN_RATE);
 
 // send zombie to clients
@@ -43,20 +70,20 @@ var zombieAttack = function (zombie, nickname) {
       victim.hp = victim.hp - damage;
 
       if (victim.alive) {
-        var message = 'zombie ' + zombie + ' bites ' +
+        var message = 'Zombie ' + zombie + ' bites ' +
           nickname + ' for ' + damage + ' damage!';
 
         io.sockets.emit('messages', message);
 
         if (victim.hp < 1) {
-          var message = 'zombie ' + zombie + ' killed ' +
+          var message = 'Zombie ' + zombie + ' killed ' +
             nickname + '!';
           io.sockets.emit('messages', message);
           victim.alive = false;
           human_actions.setRespawnTimer(nickname);
         }
       } else {
-        var message = 'zombie ' + zombie +
+        var message = 'Zombie ' + zombie +
         ' is feasting on the corpse of ' + nickname + '!';
         io.sockets.emit('messages', message);
       }

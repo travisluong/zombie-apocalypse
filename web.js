@@ -8,12 +8,13 @@ global.redis = require('redis-url').connect(process.env.REDISTOGO_URL);
 // global variables
 global.zombies = {}
 global.zombie_counter = 0;
+global.zombie_wave = 0;
 
 // global constants
 global.ZOMBIE_SPAWN_RATE = 10000;
 global.ZOMBIE_ATTACK_RATE = 10000;
 global.ZOMBIE_ATTACK_DAMAGE = 20;
-global.ZOMBIES_PER_CHATTER = 5;
+global.ZOMBIES_PER_CHATTER = 20;
 global.ZOMBIE_HP = 100;
 global.CHATTER_RESPAWN_RATE = 30000;
 global.CHATTER_HP = 100;
@@ -29,7 +30,7 @@ global.HP_REGEN_RATE = 1;
 global.AMMO_REGEN_RATE = 0;
 global.STAMINA_REGEN_RATE = 25;
 global.REGEN_INTERVAL = 2000;
-global.AMMO_DROP_RATE = 20;
+global.AMMO_DROP_RATE = 30;
 global.FIRST_AID_DROP_RATE = 20;
 
 // custom global modules
