@@ -6,30 +6,72 @@
   <meta name="keywords" content="Node.js MUD">
   <title>Node.js MUD</title>
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
-  <link href='http://fonts.googleapis.com/css?family=Butcherman|Creepster' rel='stylesheet' type='text/css'>
+  <link href='http://fonts.googleapis.com/css?family=Creepster|Press+Start+2P' rel='stylesheet' type='text/css'>
   <link rel="stylesheet" href="style.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <div id="header">
+  <div id="header" class="cfx">
     <h1><span>Zombie</span> Apocalypse</h1>
+    <div id="author">Created by <a href="http://www.travisluong.com">Travis Luong</a></div>
   </div>
-  <div id="container">
+  <div id="container" class="cfx">
     <div id="left">
-      <div id="chatters">
-      </div>
+      <div id="chatters"></div>
     </div>
     <div id="middle">
-      <div id="chat_window">
-      </div>
-      <form action="" id="chat_form">
+      <div id="chat_window"></div>
+      <form action="" id="chat_form" class="cfx">
         <input type="text" name="chat_input" id="chat_input" autocomplete="off"></input>
       </form>
+      <div id="commands" class="cfx">
+        <table>
+          <tr>
+            <th>Commands</th>
+            <th>Description</th>
+            <th>Cost</th>
+          </tr>
+          <tr>
+            <td>shoot</td>
+            <td>Shoot closest zombie.</td>
+            <td rowspan="3"><span class="ammo">1 ammo</span> + <span class="stamina_command">25% stamina</span></td>
+          </tr>
+          <tr>
+            <td>shoot [number]</td>
+            <td>Shoot specific zombie.</td>
+          </tr>
+          <tr>
+            <td>shoot [nickname]</td>
+            <td>Shoot person.</td>
+          </tr>
+          <tr>
+            <td>stab</td>
+            <td>Stab closest zombie</td>
+            <td rowspan="3"><span class="stamina_command">50% stamina</span></td>
+          </tr>
+          <tr>
+            <td>stab [number]</td>
+            <td>Stab specific zombie.</td>
+          </tr>
+          <tr>
+            <td>stab [nickname]</td>
+            <td>Stab person.</td>
+          </tr>
+          <tr>
+            <td>heal</td>
+            <td>Heal self</td>
+            <td rowspan="2"><span class="first_aid">1 first aid kit</span> + <span class="stamina_command">100% stamina</span></td>
+          </tr>
+          <tr>
+            <td>heal [nickname]</td>
+            <td>Heal person.</td>
+          </tr>
+        </table>
+      </div>
     </div>
     <div id="right">
-      <div id="zombies">
-      </div>
+      <div id="zombies"></div>
     </div>
   </div>
 </body>

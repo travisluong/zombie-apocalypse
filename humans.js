@@ -140,6 +140,68 @@ exports.handleAttackChatter = function (nickname, attacked, socket) {
   });
 }
 
+// parameters: name of attacker and attacked
+exports.handleStabChatter = function (nickname, attacked, socket) {
+
+  redis.hget("chatters", nickname, function (err, reply) {
+    var attacker = JSON.parse(reply);
+
+    // if basic attack conditions are not met, stop the attack
+    if (isChatterReady(attacker, CHATTER_STAB_COST, socket) === false) {
+      return;
+    }
+
+    // check if chatter exists
+    redis.hexists('chatters', attacked, function (err, reply) {
+      if (reply === 0) {
+        socket.emit('messages', attacked + ' does not exist!');
+        return;
+      }
+
+      if (isEnoughAmmo(attacker, socket) === false) {
+        return;
+      }
+
+      attacker.stamina = attacker.stamina - CHATTER_STAB_COST;
+
+      // update attacker stats on redis
+      attacker = JSON.stringify(attacker);
+      redis.hset("chatters", nickname, attacker);
+
+      // get attacked from redis
+      redis.hget("chatters", attacked, function (err, reply) {
+        var attacked_chatter = JSON.parse(reply);
+
+        // check if already dead
+        if (attacked_chatter.alive === false) {
+          socket.emit('messages', attacked_chatter.nickname + ' is already dead!');
+          return;
+        }
+
+        // deal damage
+        var damage = Math.round(Math.random() * CHATTER_STAB_DAMAGE);
+        attacked_chatter.hp = attacked_chatter.hp - damage;
+
+        // broadcast attack to all
+        io.sockets.emit("messages", nickname +
+          " stabs " + attacked + " for " + damage + " damage!");
+
+        // check if killed
+        if (attacked_chatter.hp < 1) {
+          io.sockets.emit('messages', nickname + ' killed ' +
+            attacked_chatter.nickname + '!' );
+          attacked_chatter.alive = false;
+        }
+
+        // update attacked_chatter to redis
+        attacked_chatter_nickname = attacked_chatter.nickname;
+        attacked_chatter = JSON.stringify(attacked_chatter);
+        redis.hset("chatters", attacked_chatter_nickname, attacked_chatter);
+      });
+    });
+  });
+}
+
 var isZombiePresent = function (zombie, socket) {
   // check if any zombie exists
   if (Object.keys(zombies).length === 0) {

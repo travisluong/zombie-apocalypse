@@ -155,18 +155,21 @@ io.sockets.on('connection', function (socket) {
     socket.get('nickname', function (err, nickname) {
 
       split_words = data.split(' ');
+      var target = split_words[1];
 
-      if (split_words[0] === 'kill') {
-        var attacked = split_words[1];
-        human_actions.handleAttackChatter(nickname, attacked, socket);
-      } else if (split_words[0] === 'shoot') {
-        var zombie = split_words[1];
-        human_actions.handleAttackZombie(nickname, zombie, socket);
+      if (split_words[0] === 'shoot') {
+        if (typeof Number(target) === 'number' || target === undefined) {
+          human_actions.handleAttackZombie(nickname, target, socket);
+        } else {
+          human_actions.handleAttackChatter(nickname, target, socket);
+        }
       } else if (split_words[0] === 'stab') {
-        var zombie = split_words[1];
-        human_actions.handleStabZombie(nickname, zombie, socket);
+        if (typeof Number(target) === 'number' || target === undefined) {
+          human_actions.handleStabZombie(nickname, target, socket);
+        } else {
+          human_actions.handleStabChatter(nickname, target, socket);
+        }
       } else if (split_words[0] === 'heal') {
-        var target = split_words[1];
         human_actions.handleHeal(nickname, target, socket);
       } else {
         var message = nickname + ": " + data;
