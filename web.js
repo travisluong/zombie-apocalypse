@@ -90,7 +90,11 @@ var validateNickname = function (nickname, socket) {
       return true;
     }
   });
+}
 
+// validate is number
+var isNumber = function (n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
 // on connection
@@ -158,13 +162,13 @@ io.sockets.on('connection', function (socket) {
       var target = split_words[1];
 
       if (split_words[0] === 'shoot') {
-        if (typeof Number(target) === 'number' || target === undefined) {
+        if (isNumber(target) || target === undefined) {
           human_actions.handleAttackZombie(nickname, target, socket);
         } else {
           human_actions.handleAttackChatter(nickname, target, socket);
         }
       } else if (split_words[0] === 'stab') {
-        if (typeof Number(target) === 'number' || target === undefined) {
+        if (isNumber(target) || target === undefined) {
           human_actions.handleStabZombie(nickname, target, socket);
         } else {
           human_actions.handleStabChatter(nickname, target, socket);
