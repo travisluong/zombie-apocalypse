@@ -301,6 +301,7 @@ exports.handleStabZombie = function (nickname, zombie, socket) {
         zombie + '!' );
       delete zombies[zombie];
       attacker.score = attacker.score + 1;
+      attacker = randomReward(attacker, socket);
     }
 
     // update attacker stats on redis
