@@ -9,6 +9,10 @@ h1 {
   font-size: 30px;
 }
 
+.message {
+  color: #F76631;
+}
+
 .stat_bar {
   height: 10px;
   margin: 2px 0;

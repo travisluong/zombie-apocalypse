@@ -176,7 +176,7 @@ io.sockets.on('connection', function (socket) {
       } else if (split_words[0] === 'heal') {
         human_actions.handleHeal(nickname, target, socket);
       } else {
-        var message = nickname + ": " + data;
+        var message = '<span class="message">' + nickname + ": " + data + '</span>' ;
         socket.broadcast.emit("messages", message);
         socket.emit("messages", message);
       }
